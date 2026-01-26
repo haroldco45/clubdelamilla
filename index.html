@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club de la Milla | Vibras Positivas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c; --bg: #f8f9fa; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        #reloj { font-size: 1.6em; font-weight: 600; }
+        #fecha { font-size: 0.9em; opacity: 0.9; text-transform: capitalize; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
+        .btn-go { background: var(--accent); color: white; }
+        .btn-go:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-setup { background: #3498db; color: white; border: 2px dashed white; }
+        .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
+        #loginSection, #appSection, #adminPanel { display: none; }
+        .active { display: block !important; }
+        .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 8px; border-radius: 8px; }
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+        .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    </style>
+</head>
+<body onload="iniciarReloj()">
+
+<div class="container">
+    <div style="text-align: center; margin-bottom: 10px;">
+        <strong style="color: var(--accent); letter-spacing: 1px;">✨ VIBRAS POSITIVAS</strong>
+    </div>
+
+    <div class="reloj-container">
+        <div id="fecha">Iniciando sistema...</div>
+        <div id="reloj">--:--:-- --</div>
+    </div>
+
+    <div id="loginSection" class="active">
+        <h2 style="text-align:center;">Registro de Millas</h2>
+        <input type="text" id="regNombre" placeholder="Nombre Completo">
+        <input type="tel" id="regCelular" placeholder="Celular / WhatsApp">
+        <input type="email" id="email" placeholder="Correo electrónico">
+        <input type="password" id="pass" placeholder="Contraseña">
+        <button class="btn btn-go" onclick="autenticar()">Ingresar al Club</button>
+    </div>
+
+    <div id="appSection">
+        <h3 id="displayUser" style="text-align:center;">--</h3>
+        
+        <span id="gpsStatus" class="gps-indicator" style="background: #ffebee; color: var(--danger);">📍 GPS: Buscando señal...</span>
+        
+        <div class="stats">
+            <small>MIS VUELTAS TOTALES</small>
+            <div style="font-size: 3em; font-weight: 600;" id="misVueltas">0</div>
+        </div>
+
+        <button class="btn btn-go" id="btnVuelta" onclick="registrarVuelta()" disabled>Marcar Vuelta Completada</button>
+        
+        <div id="adminPanel">
+            <div id="setupRuta" style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #90caf9;">
+                <h4 style="margin:0 0 10px 0; color: #1565c0;">⚙️ Configuración de Ruta</h4>
+                <p style="font-size: 0.8em; color: #555;">Ubícate en la línea de Meta y presiona el botón para grabar el punto oficial.</p>
+                <button class="btn btn-setup" onclick="grabarPuntoMeta()">📍 GRABAR PUNTO DE META AQUÍ</button>
+                <div id="coordGrabada" style="font-size: 0.7em; margin-top:10px; font-family: monospace; color: #1565c0;">Punto actual: No definido</div>
+            </div>
+
+            <hr style="margin: 25px 0;">
+            <h3 style="text-align:center;">📊 Monitor de Participantes</h3>
+            <div style="overflow-x: auto;">
+                <table class="admin-table">
+                    <thead><tr><th>Nombre</th><th>Vueltas</th><th>Acción</th></tr></thead>
+                    <tbody id="listaCuerpo"></tbody>
+                </table>
+            </div>
+            <button class="btn" style="background: var(--primary); color:white;" onclick="exportarInforme()">Descargar Excel</button>
+        </div>
+
+        <button onclick="location.reload()" style="background:none; border:none; color:#95a5a6; cursor:pointer; width:100%; margin-top:20px; font-weight:bold;">Cerrar Sesión</button>
+    </div>
+</div>
+
+<script>
+    let vLocales = 0;
+    let db = JSON.parse(localStorage.getItem('clubMillaDB')) || [];
+    let meta = JSON.parse(localStorage.getItem('puntoMeta')) || null;
+    const ADMIN = "admin@distrileco.com";
+
+    function iniciarReloj() {
+        if (meta) document.getElementById('coordGrabada').innerText = `Punto oficial: ${meta.lat.toFixed(5)}, ${meta.lon.toFixed(5)}`;
+        setInterval(() => {
+            const ahora = new Date();
+            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        }, 1000);
+        monitorearGPS();
+    }
+
+    function grabarPuntoMeta() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                meta = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                localStorage.setItem('puntoMeta', JSON.stringify(meta));
+                document.getElementById('coordGrabada').innerText = `✅ PUNTO GRABADO: ${meta.lat.toFixed(5)}, ${meta.lon.toFixed(5)}`;
+                alert("Ruta oficial establecida. Ahora los competidores podrán marcar vueltas en este punto.");
+            }, null, { enableHighAccuracy: true });
+        }
+    }
+
+    function monitorearGPS() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(pos => {
+                const status = document.getElementById('gpsStatus');
+                const btn = document.getElementById('btnVuelta');
+                
+                if (!meta) {
+                    status.innerText = "⚠️ ESPERANDO QUE EL ADMIN GRABE LA RUTA";
+                    status.style.background = "#fff3e0"; status.style.color = "#ef6c00";
+                    return;
+                }
+
+                const dist = calcularDist(pos.coords.latitude, pos.coords.longitude, meta.lat, meta.lon);
+                
+                if (dist <= 0.08) { // 80 metros de tolerancia
+                    status.innerText = "✅ EN ZONA DE META - PUEDES MARCAR";
+                    status.style.background = "#e8f5e9"; status.style.color = "var(--accent)";
+                    btn.disabled = false;
+                } else {
+                    status.innerText = `❌ FUERA DE RANGO (${(dist*1000).toFixed(0)}m)`;
+                    status.style.background = "#ffebee"; status.style.color = "var(--danger)";
+                    btn.disabled = true;
+                }
+            }, null, { enableHighAccuracy: true });
+        }
+    }
+
+    function calcularDist(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function autenticar() {
+        const correo = document.getElementById('email').value.toLowerCase();
+        if (correo.includes('@')) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('appSection').classList.add('active');
+            if (correo === ADMIN) {
+                document.getElementById('displayUser').innerText = "MODO ADMINISTRADOR";
+                document.getElementById('adminPanel').classList.add('active');
+                actualizarTabla();
+            } else {
+                document.getElementById('displayUser').innerText = "HOLA, " + document.getElementById('regNombre').value.toUpperCase();
+            }
+        }
+    }
+
+    function registrarVuelta() {
+        vLocales++;
+        document.getElementById('misVueltas').innerText = vLocales;
+        const reg = { Nombre: document.getElementById('regNombre').value, Celular: document.getElementById('regCelular').value, Correo: document.getElementById('email').value, Vueltas: vLocales, Hora: document.getElementById('reloj').innerText };
+        const idx = db.findIndex(u => u.Correo === reg.Correo);
+        idx > -1 ? db[idx] = reg : db.push(reg);
+        localStorage.setItem('clubMillaDB', JSON.stringify(db));
+        actualizarTabla();
+        alert("¡Vuelta #" + vLocales + " confirmada!");
+    }
+
+    function actualizarTabla() {
+        const lista = document.getElementById('listaCuerpo');
+        if (!lista) return;
+        lista.innerHTML = "";
+        db.forEach((u, i) => {
+            lista.innerHTML += `<tr><td>${u.Nombre}</td><td><b>${u.Vueltas}</b></td><td><button onclick="editar(${i})" style="border:none; background:none; cursor:pointer;">✏️</button></td></tr>`;
+        });
+    }
+
+    function editar(i) {
+        const n = prompt("Corregir vueltas:", db[i].Vueltas);
+        if (n !== null) { db[i].Vueltas = parseInt(n); localStorage.setItem('clubMillaDB', JSON.stringify(db)); actualizarTabla(); }
+    }
+
+    function exportarInforme() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Millas");
+        XLSX.writeFile(wb, "Reporte_Club_Milla.xlsx");
+    }
+</script>
+</body>
+</html>
