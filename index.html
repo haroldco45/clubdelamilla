@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club de la Milla | Vibras Positivas</title>
+    <title>Club de la Milla | Auditoría 4 Puntos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -12,18 +12,18 @@
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         #reloj { font-size: 1.6em; font-weight: 600; }
-        #fecha { font-size: 0.9em; opacity: 0.9; text-transform: capitalize; }
+        #fecha { font-size: 0.9em; opacity: 0.9; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
         .btn-go { background: var(--accent); color: white; }
         .btn-go:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-setup { background: #3498db; color: white; border: 2px dashed white; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
         #loginSection, #appSection, #adminPanel { display: none; }
         .active { display: block !important; }
         .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 8px; border-radius: 8px; }
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
-        .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .checkpoint-list { display: flex; justify-content: space-between; margin-top: 10px; }
+        .dot { width: 15px; height: 15px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; }
+        .dot.active { background: var(--accent); border-color: #1b5e20; }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -34,48 +34,50 @@
     </div>
 
     <div class="reloj-container">
-        <div id="fecha">Iniciando sistema...</div>
+        <div id="fecha">Cargando...</div>
         <div id="reloj">--:--:-- --</div>
     </div>
 
     <div id="loginSection" class="active">
-        <h2 style="text-align:center;">Registro de Millas</h2>
+        <h2 style="text-align:center;">Registro Club</h2>
         <input type="text" id="regNombre" placeholder="Nombre Completo">
-        <input type="tel" id="regCelular" placeholder="Celular / WhatsApp">
+        <input type="tel" id="regCelular" placeholder="Celular">
         <input type="email" id="email" placeholder="Correo electrónico">
         <input type="password" id="pass" placeholder="Contraseña">
-        <button class="btn btn-go" onclick="autenticar()">Ingresar al Club</button>
+        <button class="btn btn-go" onclick="autenticar()">Ingresar</button>
     </div>
 
     <div id="appSection">
         <h3 id="displayUser" style="text-align:center;">--</h3>
+        <span id="gpsStatus" class="gps-indicator" style="background: #fff3e0; color: #ef6c00;">📍 GPS: Iniciando...</span>
         
-        <span id="gpsStatus" class="gps-indicator" style="background: #ffebee; color: var(--danger);">📍 GPS: Buscando señal...</span>
-        
+        <div style="text-align: center; margin-bottom: 10px;">
+            <small>Progreso de la vuelta actual:</small>
+            <div class="checkpoint-list">
+                <div id="dot0" class="dot"></div>
+                <div id="dot1" class="dot"></div>
+                <div id="dot2" class="dot"></div>
+                <div id="dot3" class="dot"></div>
+            </div>
+        </div>
+
         <div class="stats">
-            <small>MIS VUELTAS TOTALES</small>
+            <small>VUELTAS VALIDADAS</small>
             <div style="font-size: 3em; font-weight: 600;" id="misVueltas">0</div>
         </div>
 
-        <button class="btn btn-go" id="btnVuelta" onclick="registrarVuelta()" disabled>Marcar Vuelta Completada</button>
+        <button class="btn btn-go" id="btnVuelta" onclick="completarVuelta()" disabled>Registrar Vuelta Completa</button>
         
-        <div id="adminPanel">
-            <div id="setupRuta" style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #90caf9;">
-                <h4 style="margin:0 0 10px 0; color: #1565c0;">⚙️ Configuración de Ruta</h4>
-                <p style="font-size: 0.8em; color: #555;">Ubícate en la línea de Meta y presiona el botón para grabar el punto oficial.</p>
-                <button class="btn btn-setup" onclick="grabarPuntoMeta()">📍 GRABAR PUNTO DE META AQUÍ</button>
-                <div id="coordGrabada" style="font-size: 0.7em; margin-top:10px; font-family: monospace; color: #1565c0;">Punto actual: No definido</div>
-            </div>
-
-            <hr style="margin: 25px 0;">
-            <h3 style="text-align:center;">📊 Monitor de Participantes</h3>
-            <div style="overflow-x: auto;">
-                <table class="admin-table">
-                    <thead><tr><th>Nombre</th><th>Vueltas</th><th>Acción</th></tr></thead>
-                    <tbody id="listaCuerpo"></tbody>
-                </table>
-            </div>
-            <button class="btn" style="background: var(--primary); color:white;" onclick="exportarInforme()">Descargar Excel</button>
+        <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px;">
+            <h4 style="margin:0 0 10px 0;">⚙️ Configurar 4 Puntos</h4>
+            <select id="puntoSeleccionado" style="width:100%; padding:8px; margin-bottom:10px;">
+                <option value="0">Punto 1 (Salida)</option>
+                <option value="1">Punto 2 (Control)</option>
+                <option value="2">Punto 3 (Control)</option>
+                <option value="3">Punto 4 (Meta)</option>
+            </select>
+            <button class="btn" style="background:#3498db; color:white;" onclick="grabarPunto()">📍 GRABAR ESTE PUNTO</button>
+            <button class="btn" style="background:var(--primary); color:white;" onclick="exportarInforme()">Descargar Excel</button>
         </div>
 
         <button onclick="location.reload()" style="background:none; border:none; color:#95a5a6; cursor:pointer; width:100%; margin-top:20px; font-weight:bold;">Cerrar Sesión</button>
@@ -84,56 +86,59 @@
 
 <script>
     let vLocales = 0;
+    let puntosOficiales = JSON.parse(localStorage.getItem('puntosClub')) || [null, null, null, null];
+    let progresoActual = [false, false, false, false];
     let db = JSON.parse(localStorage.getItem('clubMillaDB')) || [];
-    let meta = JSON.parse(localStorage.getItem('puntoMeta')) || null;
     const ADMIN = "admin@distrileco.com";
 
     function iniciarReloj() {
-        if (meta) document.getElementById('coordGrabada').innerText = `Punto oficial: ${meta.lat.toFixed(5)}, ${meta.lon.toFixed(5)}`;
         setInterval(() => {
             const ahora = new Date();
-            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US', { hour12: true });
         }, 1000);
         monitorearGPS();
     }
 
-    function grabarPuntoMeta() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                meta = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                localStorage.setItem('puntoMeta', JSON.stringify(meta));
-                document.getElementById('coordGrabada').innerText = `✅ PUNTO GRABADO: ${meta.lat.toFixed(5)}, ${meta.lon.toFixed(5)}`;
-                alert("Ruta oficial establecida. Ahora los competidores podrán marcar vueltas en este punto.");
-            }, null, { enableHighAccuracy: true });
-        }
+    function grabarPunto() {
+        const idx = document.getElementById('puntoSeleccionado').value;
+        navigator.geolocation.getCurrentPosition(pos => {
+            puntosOficiales[idx] = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+            localStorage.setItem('puntosClub', JSON.stringify(puntosOficiales));
+            alert(`Punto ${parseInt(idx)+1} grabado con éxito.`);
+        }, null, { enableHighAccuracy: true });
     }
 
     function monitorearGPS() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(pos => {
-                const status = document.getElementById('gpsStatus');
-                const btn = document.getElementById('btnVuelta');
-                
-                if (!meta) {
-                    status.innerText = "⚠️ ESPERANDO QUE EL ADMIN GRABE LA RUTA";
-                    status.style.background = "#fff3e0"; status.style.color = "#ef6c00";
-                    return;
-                }
+        navigator.geolocation.watchPosition(pos => {
+            const status = document.getElementById('gpsStatus');
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
 
-                const dist = calcularDist(pos.coords.latitude, pos.coords.longitude, meta.lat, meta.lon);
-                
-                if (dist <= 0.08) { // 80 metros de tolerancia
-                    status.innerText = "✅ EN ZONA DE META - PUEDES MARCAR";
-                    status.style.background = "#e8f5e9"; status.style.color = "var(--accent)";
-                    btn.disabled = false;
-                } else {
-                    status.innerText = `❌ FUERA DE RANGO (${(dist*1000).toFixed(0)}m)`;
-                    status.style.background = "#ffebee"; status.style.color = "var(--danger)";
-                    btn.disabled = true;
+            puntosOficiales.forEach((p, i) => {
+                if (p && !progresoActual[i]) {
+                    const dist = calcularDist(lat, lon, p.lat, p.lon);
+                    if (dist <= 0.05) { // 50 metros para validar
+                        progresoActual[i] = true;
+                        document.getElementById('dot'+i).classList.add('active');
+                        if(i < 3) alert(`Punto de control ${i+1} validado.`);
+                    }
                 }
-            }, null, { enableHighAccuracy: true });
-        }
+            });
+
+            const todosPuntos = progresoActual.every(p => p === true);
+            const btn = document.getElementById('btnVuelta');
+            
+            if (todosPuntos) {
+                status.innerText = "✅ RECORRIDO COMPLETO: PUEDES MARCAR";
+                status.style.background = "#e8f5e9"; status.style.color = "var(--accent)";
+                btn.disabled = false;
+            } else {
+                status.innerText = "📍 Sigue el recorrido por los puntos";
+                status.style.background = "#fff3e0"; status.style.color = "#ef6c00";
+                btn.disabled = true;
+            }
+        }, null, { enableHighAccuracy: true });
     }
 
     function calcularDist(lat1, lon1, lat2, lon2) {
@@ -152,43 +157,31 @@
             if (correo === ADMIN) {
                 document.getElementById('displayUser').innerText = "MODO ADMINISTRADOR";
                 document.getElementById('adminPanel').classList.add('active');
-                actualizarTabla();
             } else {
                 document.getElementById('displayUser').innerText = "HOLA, " + document.getElementById('regNombre').value.toUpperCase();
             }
         }
     }
 
-    function registrarVuelta() {
+    function completarVuelta() {
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
-        const reg = { Nombre: document.getElementById('regNombre').value, Celular: document.getElementById('regCelular').value, Correo: document.getElementById('email').value, Vueltas: vLocales, Hora: document.getElementById('reloj').innerText };
-        const idx = db.findIndex(u => u.Correo === reg.Correo);
-        idx > -1 ? db[idx] = reg : db.push(reg);
+        progresoActual = [false, false, false, false];
+        for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
+        document.getElementById('btnVuelta').disabled = true;
+        
+        // Guardar en DB para el Excel
+        const reg = { Nombre: document.getElementById('regNombre').value, Vueltas: vLocales, Hora: document.getElementById('reloj').innerText };
+        db.push(reg);
         localStorage.setItem('clubMillaDB', JSON.stringify(db));
-        actualizarTabla();
-        alert("¡Vuelta #" + vLocales + " confirmada!");
-    }
-
-    function actualizarTabla() {
-        const lista = document.getElementById('listaCuerpo');
-        if (!lista) return;
-        lista.innerHTML = "";
-        db.forEach((u, i) => {
-            lista.innerHTML += `<tr><td>${u.Nombre}</td><td><b>${u.Vueltas}</b></td><td><button onclick="editar(${i})" style="border:none; background:none; cursor:pointer;">✏️</button></td></tr>`;
-        });
-    }
-
-    function editar(i) {
-        const n = prompt("Corregir vueltas:", db[i].Vueltas);
-        if (n !== null) { db[i].Vueltas = parseInt(n); localStorage.setItem('clubMillaDB', JSON.stringify(db)); actualizarTabla(); }
+        alert("¡Vuelta registrada oficialmente!");
     }
 
     function exportarInforme() {
         const ws = XLSX.utils.json_to_sheet(db);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Millas");
-        XLSX.writeFile(wb, "Reporte_Club_Milla.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+        XLSX.writeFile(wb, "Club_La_Milla_Auditoria.xlsx");
     }
 </script>
 </body>
