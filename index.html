@@ -12,18 +12,18 @@
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         #reloj { font-size: 1.6em; font-weight: 600; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
         .btn-go { background: var(--accent); color: white; }
-        .btn-setup { background: #3498db; color: white; font-size: 0.8em; margin-top: 5px; }
-        .btn-reset { background: var(--danger); color: white; font-size: 0.8em; margin-top: 15px; }
+        .btn-setup { background: #3498db; color: white; font-size: 0.8em; }
+        .btn-reset { background: var(--danger); color: white; font-size: 0.8em; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
         #loginSection, #appSection, #adminPanel { display: none; }
         .active { display: block !important; }
-        .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+        .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .checkpoint-list { display: flex; justify-content: space-between; margin: 10px 40px; }
-        .dot { width: 22px; height: 22px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; }
-        .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .dot { width: 22px; height: 22px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; transition: 0.3s; }
+        .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); transform: scale(1.1); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.75em; }
         .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
@@ -36,29 +36,29 @@
     </div>
 
     <div class="reloj-container">
-        <div id="fecha">Cargando...</div>
+        <div id="fecha">Cargando fecha...</div>
         <div id="reloj">--:--:-- --</div>
     </div>
 
     <div id="loginSection" class="active">
-        <h2 style="text-align:center;">Registro de Millas</h2>
-        <input type="text" id="regNombre" placeholder="Nombre Completo">
-        <input type="email" id="email" placeholder="Correo electrónico">
-        <button class="btn btn-go" onclick="autenticar()">Ingresar al Club</button>
+        <h2 style="text-align:center;">Bienvenido al Club</h2>
+        <input type="text" id="regNombre" placeholder="Tu Nombre">
+        <input type="email" id="email" placeholder="Tu Correo">
+        <button class="btn btn-go" onclick="autenticar()">INGRESAR AL CLUB</button>
     </div>
 
     <div id="appSection">
         <h3 id="displayUser" style="text-align:center;">--</h3>
         
-        <div id="gpsPrompt" style="background: #fff3e0; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #ffe0b2;">
-            <small style="display:block; margin-bottom:5px;">¿El GPS no reconoce los puntos?</small>
-            <button onclick="activarSensorGPS()" style="background: #ef6c00; color:white; border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">📡 ACTIVAR SENSOR GPS</button>
+        <div id="gpsPrompt" style="background: #e3f2fd; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #90caf9;">
+            <p style="margin:0 0 8px 0; font-size: 0.85em; font-weight: 600;">Paso 1: Activa tu rastreador</p>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ENCENDER GPS AHORA</button>
         </div>
 
-        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">📍 Esperando activación de sensor...</span>
+        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando activación...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Auditoría de Ruta (5m):</small>
+            <small>Auditoría de Paso (Rango 15m):</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot"></div>
                 <div id="dot1" class="dot"></div>
@@ -73,20 +73,20 @@
         </div>
 
         <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #90caf9;">
-            <h4 style="margin:0 0 10px 0; text-align: center;">⚙️ Auditoría en Vivo</h4>
+            <h4 style="margin:0 0 10px 0; text-align: center;">📊 Auditoría Harold Marin</h4>
             <div style="max-height: 150px; overflow-y: auto;">
                 <table class="admin-table">
-                    <thead><tr><th>Participante</th><th>#</th><th>Hora</th></tr></thead>
+                    <thead><tr><th>Nombre</th><th>#</th><th>Hora</th></tr></thead>
                     <tbody id="listaCuerpo"></tbody>
                 </table>
             </div>
             <button class="btn" style="background:var(--primary); color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel</button>
             <hr style="margin: 15px 0;">
-            <button class="btn btn-setup" onclick="grabarPunto(0)">📍 GRABAR PUNTO 1</button>
-            <button class="btn btn-setup" onclick="grabarPunto(1)">📍 GRABAR PUNTO 2</button>
-            <button class="btn btn-setup" onclick="grabarPunto(2)">📍 GRABAR PUNTO 3</button>
-            <button class="btn btn-setup" onclick="grabarPunto(3)">📍 GRABAR PUNTO 4</button>
-            <button class="btn btn-reset" onclick="resetearTodo()">⚠️ REINICIAR CLUB</button>
+            <button class="btn btn-setup" onclick="grabarPunto(0)">📍 GRABAR P1 (SALIDA)</button>
+            <button class="btn btn-setup" onclick="grabarPunto(1)">📍 GRABAR P2</button>
+            <button class="btn btn-setup" onclick="grabarPunto(2)">📍 GRABAR P3</button>
+            <button class="btn btn-setup" onclick="grabarPunto(3)">📍 GRABAR P4 (META)</button>
+            <button class="btn btn-reset" onclick="resetearTodo()">⚠️ REINICIAR TODO</button>
         </div>
         <button onclick="location.reload()" style="background:none; border:none; color:#95a5a6; cursor:pointer; width:100%; margin-top:20px; font-weight:bold;">Cerrar Sesión</button>
     </div>
@@ -104,19 +104,21 @@
     function iniciarReloj() {
         setInterval(() => {
             const ahora = new Date();
-            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO');
-            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US');
+            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US', { hour12: true });
         }, 1000);
     }
 
     function activarSensorGPS() {
+        if (!navigator.geolocation) return alert("Tu celular no soporta GPS.");
         if (watchID) navigator.geolocation.clearWatch(watchID);
         
         watchID = navigator.geolocation.watchPosition(pos => {
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = `📍 Buscando puntos... (Lat: ${lat.toFixed(4)})`;
+            
+            status.innerText = "📍 GPS ACTIVADO - BUSCANDO RUTA";
             status.style.background = "#e8f5e9";
             status.style.color = "var(--accent)";
 
@@ -124,8 +126,8 @@
                 if (!p) return;
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
 
-                if (dist <= 0.005) { // 5 metros
-                    // Lógica de SECUENCIA: Solo marca el punto si es el primero o si el anterior ya está listo
+                // RANGO AJUSTADO A 15 METROS PARA MÁXIMA ESTABILIDAD
+                if (dist <= 0.015) { 
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
                             marcarPunto(i);
@@ -134,11 +136,11 @@
                 }
             });
         }, err => {
-            alert("Error de GPS: Asegúrate de dar permiso y tener el GPS encendido.");
-        }, { enableHighAccuracy: true, maximumAge: 0 });
+            alert("Por favor, permite el acceso a la ubicación en los ajustes de tu celular.");
+        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
         
         document.getElementById('gpsPrompt').style.display = 'none';
-        alert("Sensor GPS activado. ¡Empieza tu recorrido!");
+        alert("¡Rastreador encendido! Camina hacia el Punto 1.");
     }
 
     function marcarPunto(idx) {
@@ -148,36 +150,35 @@
         if(navigator.vibrate) navigator.vibrate(200);
 
         if (idx === 3 && progresoActual.every(v => v === true)) {
-            finalizarVuelta();
+            registrarVueltaCompleta();
         }
     }
 
-    function finalizarVuelta() {
+    function registrarVueltaCompleta() {
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
         
         const reg = { 
             Nombre: document.getElementById('regNombre').value, 
-            Correo: document.getElementById('email').value, 
             Vuelta: vLocales, 
-            Hora: document.getElementById('reloj').innerText 
+            Hora: document.getElementById('reloj').innerText,
+            Correo: document.getElementById('email').value 
         };
         dbHistorial.push(reg);
         localStorage.setItem('clubMillaHistorial', JSON.stringify(dbHistorial));
         actualizarMonitor();
 
-        // RESET DE PUNTOS: Apagamos todo de inmediato para que el Punto 1 pueda volver a detectarse
         setTimeout(() => {
             progresoActual = [false, false, false, false];
             for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
-        }, 1000);
+        }, 3000);
     }
 
     function grabarPunto(idx) {
         navigator.geolocation.getCurrentPosition(pos => {
             puntosOficiales[idx] = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             localStorage.setItem('puntosClub', JSON.stringify(puntosOficiales));
-            alert(`Punto ${idx + 1} grabado.`);
+            alert(`Punto ${idx + 1} grabado correctamente.`);
         }, null, { enableHighAccuracy: true });
     }
 
@@ -198,7 +199,7 @@
                 document.getElementById('displayUser').innerText = "🏢 ADMIN: HAROLD MARIN";
                 document.getElementById('adminPanel').classList.add('active');
             } else {
-                document.getElementById('displayUser').innerText = "🏃 " + document.getElementById('regNombre').value.toUpperCase();
+                document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + document.getElementById('regNombre').value.toUpperCase();
             }
             actualizarMonitor();
             vLocales = dbHistorial.filter(u => u.Correo === correo).length;
@@ -210,21 +211,21 @@
         const lista = document.getElementById('listaCuerpo');
         if(!lista) return;
         lista.innerHTML = "";
-        [...dbHistorial].reverse().slice(0, 25).forEach(u => {
+        [...dbHistorial].reverse().slice(0, 20).forEach(u => {
             lista.innerHTML += `<tr><td>${u.Nombre}</td><td>#${u.Vuelta}</td><td>${u.Hora}</td></tr>`;
         });
     }
 
     function exportarInforme() {
-        if (dbHistorial.length === 0) return alert("No hay datos.");
-        const ws = XLSX.utils.json_to_sheet([{ "REGISTRO": "HAROLD MARIN - DISTRILECO" }, ...dbHistorial]);
+        if (dbHistorial.length === 0) return alert("No hay datos registrados.");
+        const ws = XLSX.utils.json_to_sheet([{ "REGISTRO": "HAROLD MARIN - CLUB LA MILLA" }, ...dbHistorial]);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "ClubMilla");
-        XLSX.writeFile(wb, "Auditoria_Vueltas_ClubMilla.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
+        XLSX.writeFile(wb, "Reporte_ClubMilla_VibrasPositivas.xlsx");
     }
 
     function resetearTodo() {
-        if(confirm("¿Reiniciar historial y puntos de ruta?")) { localStorage.clear(); location.reload(); }
+        if(confirm("¿Seguro que quieres borrar todo e iniciar de cero?")) { localStorage.clear(); location.reload(); }
     }
 </script>
 </body>
