@@ -71,7 +71,7 @@
         <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px;">
             <h4 style="text-align: center;">⚙️ Panel Admin Harold</h4>
             <button class="btn btn-setup" onclick="mostrarCoords()">📍 VER COORDENADAS PARA COPIAR</button>
-            <button class="btn" style="background:var(--primary); color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel</button>
+            <button class="btn" style="background:var(--primary); color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel Local</button>
         </div>
     </div>
 </div>
@@ -83,13 +83,15 @@
     const ADMIN_EMAIL = "admin@distrileco.com";
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-    // === COLOQUE AQUÍ SUS COORDENADAS ===
-    // Sustituya los ceros por los números que obtuvo en su prueba
+    // === URL DE TU GOOGLE SHEETS ===
+    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyK9UVxIur7997IqQhNBZO09ir-yBN1_afsf4UW9eDb8KqAr-nX4Kuj378vvkLGM_iUtw/exec";
+
+    // === TUS COORDENADAS FIJAS ===
     const puntosFijos = [
         { lat: 7.9839867, lon: -75.2027733 }, // Punto 1
         { lat: 7.9833783, lon: -75.2029333 }, // Punto 2
         { lat: 7.9833233, lon: -75.2026767 }, // Punto 3
-        { lat: 7.9838317, lon: -75.2025 }  // Punto 4
+        { lat: 7.9838317, lon: -75.2025 }   // Punto 4
     ];
 
     function iniciarReloj() {
@@ -105,12 +107,11 @@
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS ACTIVADO - SIGUIENTE RUTA";
+            status.innerText = "📍 GPS ACTIVADO - BUSCANDO RUTA";
 
             puntosFijos.forEach((p, i) => {
-                if (p.lat === 0) return;
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
-                if (dist <= 0.015) { // 15 metros
+                if (dist <= 0.015) { // Rango 15 metros
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
                             marcarPunto(i);
@@ -135,8 +136,25 @@
     function registrarVueltaAuto() {
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
-        dbHistorial.push({ Nombre: document.getElementById('regNombre').value, Vuelta: vLocales, Hora: document.getElementById('reloj').innerText });
+        
+        const datos = { 
+            Nombre: document.getElementById('regNombre').value, 
+            Vueltas: vLocales, 
+            Hora: document.getElementById('reloj').innerText,
+            Correo: document.getElementById('email').value 
+        };
+
+        // 1. Guardar local
+        dbHistorial.push(datos);
         localStorage.setItem('clubMillaHistorial', JSON.stringify(dbHistorial));
+
+        // 2. ENVIAR A GOOGLE SHEETS (Harold Recibe)
+        fetch(URL_GOOGLE_SHEETS, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(datos)
+        });
+
         setTimeout(() => {
             progresoActual = [false, false, false, false];
             for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
@@ -152,7 +170,6 @@
     }
 
     function mostrarCoords() {
-        // Esta función le servirá para obtener los datos de su última prueba
         const guardados = JSON.parse(localStorage.getItem('puntosClub'));
         alert(JSON.stringify(guardados));
     }
@@ -163,13 +180,14 @@
         if (document.getElementById('email').value === ADMIN_EMAIL) {
             document.getElementById('adminPanel').classList.add('active');
         }
+        document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + document.getElementById('regNombre').value.toUpperCase();
     }
     
     function exportarInforme() {
         const ws = XLSX.utils.json_to_sheet(dbHistorial);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Vueltas");
-        XLSX.writeFile(wb, "Reporte_ClubMilla.xlsx");
+        XLSX.writeFile(wb, "Reporte_ClubMilla_Local.xlsx");
     }
 </script>
 </body>
