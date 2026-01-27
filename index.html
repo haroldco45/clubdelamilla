@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club de la Milla | Auditoría 30m</title>
+    <title>Club de la Milla | Conteo Automático</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -14,7 +14,6 @@
         #reloj { font-size: 1.6em; font-weight: 600; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
         .btn-go { background: var(--accent); color: white; }
-        .btn-go:disabled { background: #ccc; cursor: not-allowed; }
         .btn-setup { background: #3498db; color: white; font-size: 0.8em; margin-top: 5px; }
         .btn-reset { background: var(--danger); color: white; font-size: 0.8em; margin-top: 15px; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
@@ -37,17 +36,17 @@
     </div>
 
     <div class="reloj-container">
-        <div id="fecha">Cargando fecha de Colombia...</div>
+        <div id="fecha">Cargando fecha...</div>
         <div id="reloj">--:--:-- --</div>
     </div>
 
     <div id="loginSection" class="active">
-        <h2 style="text-align:center;">Registro de Millas</h2>
+        <h2 style="text-align:center;">Registro Club</h2>
         <input type="text" id="regNombre" placeholder="Nombre Completo">
         <input type="tel" id="regCelular" placeholder="Celular">
         <input type="email" id="email" placeholder="Correo electrónico">
         <input type="password" id="pass" placeholder="Contraseña">
-        <button class="btn btn-go" onclick="autenticar()">Ingresar al Club</button>
+        <button class="btn btn-go" onclick="autenticar()">Ingresar</button>
     </div>
 
     <div id="appSection">
@@ -55,7 +54,7 @@
         <span id="gpsStatus" class="gps-indicator" style="background: #fff3e0; color: #ef6c00;">📍 GPS: Validando ubicación...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Auditoría de 4 Puntos (Precisión 30m):</small>
+            <small>Auditoría Automática (Meta 10m):</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot"></div>
                 <div id="dot1" class="dot"></div>
@@ -67,29 +66,24 @@
         <div class="stats">
             <small>MIS VUELTAS ACUMULADAS</small>
             <div style="font-size: 3.5em; font-weight: 600;" id="misVueltas">0</div>
+            <div id="avisoAuto" style="color: var(--accent); font-weight: bold; font-size: 0.8em; display: none;">¡VUELTA CONTADA!</div>
         </div>
 
-        <button class="btn btn-go" id="btnVuelta" onclick="completarVuelta()" disabled>Registrar Vuelta Completa</button>
-        
         <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #90caf9;">
-            <h4 style="margin:0 0 10px 0; color: #1565c0; text-align: center;">⚙️ Monitor y Configuración</h4>
-            
+            <h4 style="margin:0 0 10px 0; color: #1565c0; text-align: center;">⚙️ Monitor Administrativo</h4>
             <div style="overflow-x: auto;">
                 <table class="admin-table">
-                    <thead><tr><th>Participante</th><th>Vueltas</th><th>Última</th></tr></thead>
+                    <thead><tr><th>Participante</th><th>Vueltas</th><th>Hora</th></tr></thead>
                     <tbody id="listaCuerpo"></tbody>
                 </table>
             </div>
-
-            <button class="btn" style="background:var(--primary); color:white;" onclick="exportarInforme()">Descargar Informe Excel</button>
+            <button class="btn" style="background:var(--primary); color:white;" onclick="exportarInforme()">📥 Descargar Excel</button>
             <hr style="margin: 15px 0;">
-            
-            <button class="btn btn-setup" onclick="grabarPunto(0)">📍 GRABAR PUNTO 1 (SALIDA)</button>
+            <button class="btn btn-setup" onclick="grabarPunto(0)">📍 GRABAR PUNTO 1</button>
             <button class="btn btn-setup" onclick="grabarPunto(1)">📍 GRABAR PUNTO 2</button>
             <button class="btn btn-setup" onclick="grabarPunto(2)">📍 GRABAR PUNTO 3</button>
-            <button class="btn btn-setup" onclick="grabarPunto(3)">📍 GRABAR PUNTO 4 (META)</button>
-            
-            <button class="btn btn-reset" onclick="resetearTodo()">⚠️ REINICIAR CLUB Y RUTA</button>
+            <button class="btn btn-setup" onclick="grabarPunto(3)">📍 GRABAR PUNTO 4</button>
+            <button class="btn btn-reset" onclick="resetearTodo()">⚠️ REINICIAR TODO</button>
         </div>
 
         <button onclick="location.reload()" style="background:none; border:none; color:#95a5a6; cursor:pointer; width:100%; margin-top:20px; font-weight:bold;">Cerrar Sesión</button>
@@ -101,7 +95,7 @@
     let puntosOficiales = JSON.parse(localStorage.getItem('puntosClub')) || [null, null, null, null];
     let progresoActual = [false, false, false, false];
     let db = JSON.parse(localStorage.getItem('clubMillaDB')) || [];
-    const ADMIN = "admin@distrileco.com";
+    const ADMIN_EMAIL = "admin@distrileco.com";
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
     function iniciarReloj() {
@@ -117,8 +111,8 @@
         navigator.geolocation.getCurrentPosition(pos => {
             puntosOficiales[idx] = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             localStorage.setItem('puntosClub', JSON.stringify(puntosOficiales));
-            alert(`Punto ${idx + 1} grabado con éxito.`);
-        }, () => alert("Permite el acceso al GPS"), { enableHighAccuracy: true });
+            alert(`Punto ${idx + 1} grabado.`);
+        }, () => alert("Error GPS"), { enableHighAccuracy: true });
     }
 
     function monitorearGPS() {
@@ -130,26 +124,26 @@
             puntosOficiales.forEach((p, i) => {
                 if (p && !progresoActual[i]) {
                     const dist = calcularDist(lat, lon, p.lat, p.lon);
-                    if (dist <= 0.03) { // Precisión de 30 metros
+                    if (dist <= 0.01) { // 10 metros
                         progresoActual[i] = true;
                         document.getElementById('dot'+i).classList.add('active');
                         bell.play();
                         if(navigator.vibrate) navigator.vibrate(200);
+                        
+                        // CONTEO AUTOMÁTICO AL COMPLETAR EL PUNTO 4
+                        if (i === 3 && progresoActual.every(val => val === true)) {
+                            completarVueltaAutomatica();
+                        }
                     }
                 }
             });
 
-            const todosPuntos = progresoActual.every(p => p === true);
-            const btn = document.getElementById('btnVuelta');
-            
-            if (todosPuntos) {
-                status.innerText = "✅ RUTA VALIDADA: MARCA TU VUELTA";
+            if (progresoActual.every(p => p === true)) {
+                status.innerText = "✅ ¡VUELTA COMPLETADA AUTOMÁTICAMENTE!";
                 status.style.background = "#e8f5e9"; status.style.color = "var(--accent)";
-                btn.disabled = false;
             } else {
-                status.innerText = "📍 Recorriendo... Valida los 4 puntos";
+                status.innerText = "📍 Sigue el recorrido por los 4 puntos";
                 status.style.background = "#fff3e0"; status.style.color = "#ef6c00";
-                btn.disabled = true;
             }
         }, null, { enableHighAccuracy: true });
     }
@@ -167,31 +161,45 @@
         if (correo.includes('@')) {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
-            if (correo === ADMIN) {
+            if (correo === ADMIN_EMAIL) {
                 document.getElementById('displayUser').innerText = "🏢 ADMIN DISTRILECO";
                 document.getElementById('adminPanel').classList.add('active');
                 actualizarMonitor();
             } else {
-                document.getElementById('displayUser').innerText = "🏃‍♂️ " + document.getElementById('regNombre').value.toUpperCase();
+                document.getElementById('displayUser').innerText = "🏃 " + document.getElementById('regNombre').value.toUpperCase();
             }
         }
     }
 
-    function completarVuelta() {
+    function completarVueltaAutomatica() {
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
-        progresoActual = [false, false, false, false];
-        for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
-        document.getElementById('btnVuelta').disabled = true;
         
-        const reg = { Nombre: document.getElementById('regNombre').value, Celular: document.getElementById('regCelular').value, Correo: document.getElementById('email').value, Vueltas: vLocales, Hora: document.getElementById('reloj').innerText };
+        // Efecto visual de confirmación
+        const aviso = document.getElementById('avisoAuto');
+        aviso.style.display = 'block';
+        setTimeout(() => { aviso.style.display = 'none'; }, 3000);
+
+        const reg = { 
+            Admin_Control: "HAROLD MARIN (ADMIN)", // Nombre del administrador en el registro
+            Participante: document.getElementById('regNombre').value || "Invitado", 
+            Vueltas: vLocales, 
+            Ultima_Hora: document.getElementById('reloj').innerText,
+            Fecha: document.getElementById('fecha').innerText
+        };
         
-        const idx = db.findIndex(u => u.Correo === reg.Correo);
+        const idx = db.findIndex(u => u.Participante === reg.Participante);
         idx > -1 ? db[idx] = reg : db.push(reg);
         
         localStorage.setItem('clubMillaDB', JSON.stringify(db));
-        if (document.getElementById('email').value === ADMIN) actualizarMonitor();
-        alert("🎉 ¡Vuelta registrada!");
+        
+        // Reset para la siguiente vuelta automática
+        setTimeout(() => {
+            progresoActual = [false, false, false, false];
+            for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
+        }, 2000);
+
+        if (document.getElementById('email').value === ADMIN_EMAIL) actualizarMonitor();
     }
 
     function actualizarMonitor() {
@@ -199,22 +207,22 @@
         if(!lista) return;
         lista.innerHTML = "";
         db.sort((a,b) => b.Vueltas - a.Vueltas).forEach(u => {
-            lista.innerHTML += `<tr><td>${u.Nombre}</td><td><b>${u.Vueltas}</b></td><td>${u.Hora}</td></tr>`;
+            lista.innerHTML += `<tr><td>${u.Participante}</td><td><b>${u.Vueltas}</b></td><td>${u.Ultima_Hora}</td></tr>`;
         });
     }
 
     function exportarInforme() {
-        const ws = XLSX.utils.json_to_sheet(db);
+        if (db.length === 0) return alert("No hay datos.");
+        // Agregar fila informativa del Administrador al inicio
+        const dataParaExcel = [{ "CONTROLADOR": "ADMINISTRADOR: HAROLD MARIN", "EMPRESA": "DISTRILECO" }, ...db];
+        const ws = XLSX.utils.json_to_sheet(dataParaExcel);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
-        XLSX.writeFile(wb, "Club_Milla_Reporte_Final.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "ClubMilla");
+        XLSX.writeFile(wb, "Reporte_Club_La_Milla.xlsx");
     }
 
     function resetearTodo() {
-        if (confirm("⚠️ ¿Resetear el Club? Se borrarán todos los corredores y la ruta.")) {
-            localStorage.clear();
-            location.reload();
-        }
+        if (confirm("⚠️ ¿Borrar todo?")) { localStorage.clear(); location.reload(); }
     }
 </script>
 </body>
