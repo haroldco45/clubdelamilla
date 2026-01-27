@@ -21,8 +21,8 @@
         .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .checkpoint-list { display: flex; justify-content: space-between; margin: 10px 40px; }
         .dot { width: 22px; height: 22px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; }
-        .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); transform: scale(1.1); transition: 0.3s; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -33,28 +33,29 @@
     </div>
 
     <div class="reloj-container">
-        <div id="fecha">Cargando...</div>
+        <div id="fecha">Cargando fecha de Colombia...</div>
         <div id="reloj">--:--:-- --</div>
     </div>
 
     <div id="loginSection" class="active">
         <h2 style="text-align:center;">Registro de Millas</h2>
-        <input type="text" id="regNombre" placeholder="Tu Nombre">
-        <input type="email" id="email" placeholder="Tu Correo">
-        <button class="btn btn-go" onclick="autenticar()">INGRESAR</button>
+        <input type="text" id="regNombre" placeholder="Nombre del Competidor">
+        <input type="email" id="email" placeholder="Correo Corporativo">
+        <button class="btn btn-go" onclick="autenticar()">INGRESAR AL CLUB</button>
     </div>
 
     <div id="appSection">
         <h3 id="displayUser" style="text-align:center;">--</h3>
         
-        <div id="gpsPrompt" style="background: #e3f2fd; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS</button>
+        <div id="gpsPrompt" style="background: #e3f2fd; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #90caf9;">
+            <p style="margin:0 0 8px 0; font-size: 0.85em;">Paso 1: Activa tu rastreador para iniciar</p>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ENCENDER GPS AHORA</button>
         </div>
 
-        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando activación...</span>
+        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando activación del sensor...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Auditoría de Ruta (15m):</small>
+            <small>Auditoría de Ruta (Precisión 15m):</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot"></div>
                 <div id="dot1" class="dot"></div>
@@ -66,12 +67,13 @@
         <div class="stats">
             <small>VUELTAS VALIDADAS</small>
             <div style="font-size: 3.5em; font-weight: 600;" id="misVueltas">0</div>
+            <div id="avisoExito" style="color: var(--accent); font-weight: bold; display: none;">¡VUELTA REGISTRADA EN GOOGLE!</div>
         </div>
 
-        <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px;">
-            <h4 style="text-align: center;">⚙️ Panel Admin Harold</h4>
-            <button class="btn btn-setup" onclick="mostrarCoords()">📍 VER COORDENADAS PARA COPIAR</button>
-            <button class="btn" style="background:var(--primary); color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel Local</button>
+        <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #90caf9;">
+            <h4 style="text-align: center; margin: 0 0 10px 0;">📊 Panel Administrativo</h4>
+            <button class="btn btn-setup" onclick="alert(JSON.stringify(puntosFijos))">📍 VER COORDENADAS RUTA</button>
+            <button class="btn" style="background:var(--primary); color:white; font-size:0.8em;" onclick="exportarInformeLocal()">📥 Descargar Excel del Celular</button>
         </div>
     </div>
 </div>
@@ -83,82 +85,102 @@
     const ADMIN_EMAIL = "admin@distrileco.com";
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-    // === URL DE TU GOOGLE SHEETS ===
-    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyK9UVxIur7997IqQhNBZO09ir-yBN1_afsf4UW9eDb8KqAr-nX4Kuj378vvkLGM_iUtw/exec";
+    // === CONFIGURACIÓN DE GOOGLE SHEETS ===
+    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
-    // === TUS COORDENADAS FIJAS ===
+    // === COORDENADAS FIJAS (RECORRIDO DISTRILECO) ===
     const puntosFijos = [
         { lat: 7.9839867, lon: -75.2027733 }, // Punto 1
         { lat: 7.9833783, lon: -75.2029333 }, // Punto 2
         { lat: 7.9833233, lon: -75.2026767 }, // Punto 3
-        { lat: 7.9838317, lon: -75.2025 }   // Punto 4
+        { lat: 7.9838317, lon: -75.2025 }    // Punto 4
     ];
 
     function iniciarReloj() {
         setInterval(() => {
             const ahora = new Date();
-            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO');
-            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US');
+            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US', { hour12: true });
         }, 1000);
     }
 
     function activarSensorGPS() {
+        if (!navigator.geolocation) return alert("Tu celular no soporta GPS.");
+        
         navigator.geolocation.watchPosition(pos => {
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS ACTIVADO - BUSCANDO RUTA";
+            
+            status.innerText = "📍 RASTREADOR ACTIVO - EN RUTA";
+            status.style.background = "#e8f5e9";
+            status.style.color = "var(--accent)";
 
             puntosFijos.forEach((p, i) => {
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
-                if (dist <= 0.015) { // Rango 15 metros
+
+                // Rango 15 metros para estabilidad
+                if (dist <= 0.015) { 
+                    // Secuencia estricta: 1 -> 2 -> 3 -> 4
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
-                            marcarPunto(i);
+                            validarPunto(i);
                         }
                     }
                 }
             });
-        }, null, { enableHighAccuracy: true });
+        }, null, { enableHighAccuracy: true, maximumAge: 0 });
+        
         document.getElementById('gpsPrompt').style.display = 'none';
+        alert("GPS Encendido. Dirígete al Punto 1 para comenzar.");
     }
 
-    function marcarPunto(idx) {
+    function validarPunto(idx) {
         progresoActual[idx] = true;
         document.getElementById('dot'+idx).classList.add('active');
         bell.play();
         if(navigator.vibrate) navigator.vibrate(200);
+
+        // Si completa el circuito
         if (idx === 3 && progresoActual.every(v => v === true)) {
-            registrarVueltaAuto();
+            registrarVueltaAutomatica();
         }
     }
 
-    function registrarVueltaAuto() {
+    function registrarVueltaAutomatica() {
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
         
+        const ahora = new Date();
         const datos = { 
             Nombre: document.getElementById('regNombre').value, 
             Vueltas: vLocales, 
+            Fecha: ahora.toLocaleDateString('es-CO'), // Corrección sugerida: Incluye fecha
             Hora: document.getElementById('reloj').innerText,
             Correo: document.getElementById('email').value 
         };
 
-        // 1. Guardar local
+        // 1. Registro Local
         dbHistorial.push(datos);
         localStorage.setItem('clubMillaHistorial', JSON.stringify(dbHistorial));
 
-        // 2. ENVIAR A GOOGLE SHEETS (Harold Recibe)
+        // 2. Envío a Google Sheets
         fetch(URL_GOOGLE_SHEETS, {
             method: 'POST',
             mode: 'no-cors',
             body: JSON.stringify(datos)
         });
 
+        // Aviso visual
+        const aviso = document.getElementById('avisoExito');
+        aviso.style.display = 'block';
+        setTimeout(() => { aviso.style.display = 'none'; }, 3000);
+
+        // Reset de circuito para la siguiente vuelta
         setTimeout(() => {
             progresoActual = [false, false, false, false];
             for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
-        }, 3000);
+        }, 4000);
     }
 
     function calcularDist(lat1, lon1, lat2, lon2) {
@@ -169,25 +191,33 @@
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function mostrarCoords() {
-        const guardados = JSON.parse(localStorage.getItem('puntosClub'));
-        alert(JSON.stringify(guardados));
-    }
-
     function autenticar() {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('appSection').classList.add('active');
-        if (document.getElementById('email').value === ADMIN_EMAIL) {
-            document.getElementById('adminPanel').classList.add('active');
+        const nombre = document.getElementById('regNombre').value;
+        const correo = document.getElementById('email').value.toLowerCase();
+        
+        if (nombre && correo.includes('@')) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('appSection').classList.add('active');
+            document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + nombre.toUpperCase();
+            
+            if (correo === ADMIN_EMAIL) {
+                document.getElementById('adminPanel').classList.add('active');
+            }
+            
+            // Cargar historial previo si existe
+            vLocales = dbHistorial.filter(u => u.Correo === correo).length;
+            document.getElementById('misVueltas').innerText = vLocales;
+        } else {
+            alert("Por favor ingresa nombre y correo válido.");
         }
-        document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + document.getElementById('regNombre').value.toUpperCase();
     }
     
-    function exportarInforme() {
+    function exportarInformeLocal() {
+        if (dbHistorial.length === 0) return alert("No hay datos en este celular.");
         const ws = XLSX.utils.json_to_sheet(dbHistorial);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Vueltas");
-        XLSX.writeFile(wb, "Reporte_ClubMilla_Local.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
+        XLSX.writeFile(wb, "Reporte_Individual_Celular.xlsx");
     }
 </script>
 </body>
