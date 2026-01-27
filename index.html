@@ -12,10 +12,11 @@
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         #reloj { font-size: 1.6em; font-weight: 600; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; margin-top: 10px; transition: 0.3s; }
         .btn-go { background: var(--accent); color: white; }
         .btn-go:disabled { background: #ccc; cursor: not-allowed; }
         .btn-setup { background: #3498db; color: white; font-size: 0.8em; margin-top: 5px; }
+        .btn-reset { background: var(--danger); color: white; font-size: 0.8em; margin-top: 15px; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
         #loginSection, #appSection, #adminPanel { display: none; }
         .active { display: block !important; }
@@ -23,6 +24,7 @@
         .checkpoint-list { display: flex; justify-content: space-between; margin: 10px 40px; }
         .dot { width: 20px; height: 20px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; }
         .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 10px var(--accent); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -68,9 +70,9 @@
         <button class="btn btn-go" id="btnVuelta" onclick="completarVuelta()" disabled>Registrar Vuelta Completa</button>
         
         <div id="adminPanel" style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #90caf9;">
-            <h4 style="margin:0 0 10px 0; color: #1565c0; text-align: center;">⚙️ Grabación Oficial de Ruta</h4>
-            <p style="font-size: 0.75em; text-align: center; color: #555;">Presiona cada botón al estar parado en el punto físico correspondiente.</p>
+            <h4 style="margin:0 0 10px 0; color: #1565c0; text-align: center;">⚙️ Panel Administrativo</h4>
             
+            <p style="font-size: 0.75em; text-align: center; color: #555;">Graba los 4 puntos oficiales para la competencia:</p>
             <button class="btn btn-setup" onclick="grabarPunto(0)">📍 GRABAR PUNTO 1 (SALIDA)</button>
             <button class="btn btn-setup" onclick="grabarPunto(1)">📍 GRABAR PUNTO 2</button>
             <button class="btn btn-setup" onclick="grabarPunto(2)">📍 GRABAR PUNTO 3</button>
@@ -78,6 +80,8 @@
 
             <hr style="margin: 15px 0;">
             <button class="btn" style="background:var(--primary); color:white;" onclick="exportarInforme()">Descargar Reporte Excel</button>
+            
+            <button class="btn btn-reset" onclick="resetearTodo()">⚠️ REINICIAR CLUB (BORRAR TODO)</button>
         </div>
 
         <button onclick="location.reload()" style="background:none; border:none; color:#95a5a6; cursor:pointer; width:100%; margin-top:20px; font-weight:bold;">Cerrar Sesión</button>
@@ -104,7 +108,7 @@
         navigator.geolocation.getCurrentPosition(pos => {
             puntosOficiales[idx] = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             localStorage.setItem('puntosClub', JSON.stringify(puntosOficiales));
-            alert(`✅ Punto ${idx + 1} grabado en: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+            alert(`✅ Punto ${idx + 1} grabado con éxito.`);
         }, () => alert("Error: Activa el GPS"), { enableHighAccuracy: true });
     }
 
@@ -117,7 +121,7 @@
             puntosOficiales.forEach((p, i) => {
                 if (p && !progresoActual[i]) {
                     const dist = calcularDist(lat, lon, p.lat, p.lon);
-                    if (dist <= 0.06) { // 60 metros de radio para validar cada punto
+                    if (dist <= 0.06) { // 60 metros
                         progresoActual[i] = true;
                         document.getElementById('dot'+i).classList.add('active');
                     }
@@ -128,7 +132,7 @@
             const btn = document.getElementById('btnVuelta');
             
             if (todosListos) {
-                status.innerText = "✅ RUTA VALIDADA: PUEDES REGISTRAR VUELTA";
+                status.innerText = "✅ RUTA VALIDADA: PUEDES MARCAR";
                 status.style.background = "#e8f5e9"; status.style.color = "var(--accent)";
                 btn.disabled = false;
             } else {
@@ -171,14 +175,25 @@
         const reg = { Nombre: document.getElementById('regNombre').value, Vueltas: vLocales, Hora: document.getElementById('reloj').innerText };
         db.push(reg);
         localStorage.setItem('clubMillaDB', JSON.stringify(db));
-        alert("🎉 ¡Vuelta registrada con éxito!");
+        alert("🎉 ¡Vuelta registrada!");
     }
 
     function exportarInforme() {
+        if (db.length === 0) return alert("No hay datos para exportar.");
         const ws = XLSX.utils.json_to_sheet(db);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Reporte");
         XLSX.writeFile(wb, "Club_Milla_Auditoria.xlsx");
+    }
+
+    // FUNCIÓN DE RESETEO TOTAL
+    function resetearTodo() {
+        if (confirm("⚠️ ¿Estás seguro? Se borrarán todos los participantes registrados y los puntos de la ruta.")) {
+            localStorage.removeItem('clubMillaDB');
+            localStorage.removeItem('puntosClub');
+            alert("✅ Aplicación reseteada. La página se recargará.");
+            location.reload();
+        }
     }
 </script>
 </body>
