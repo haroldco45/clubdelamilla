@@ -7,14 +7,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c; --bg: #f8f9fa; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f8f9fa; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         #reloj { font-size: 1.6em; font-weight: 600; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
         .btn-go { background: var(--accent); color: white; }
-        .btn-admin { background: #3498db; color: white; font-size: 0.8em; margin-top: 15px; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
         #loginSection, #appSection, #adminPanel { display: none; }
         .active { display: block !important; }
@@ -48,13 +47,13 @@
         <h3 id="displayUser" style="text-align:center;">🏃 PARTICIPANTE</h3>
         
         <div id="gpsPrompt" style="background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #2196f3;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS RUTA AMPLIA</button>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS RUTA VIBRAS</button>
         </div>
 
         <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando GPS...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Progreso de Ruta (Rango 20m):</small>
+            <small>Auditoría de Ruta (Rango 25m):</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot"></div>
                 <div id="dot1" class="dot"></div>
@@ -66,12 +65,12 @@
         <div class="stats">
             <small>VUELTAS VALIDADAS</small>
             <div style="font-size: 3.5em; font-weight: 600;" id="misVueltas">0</div>
-            <div id="avisoExito" style="color: var(--accent); font-weight: bold; display: none;">¡VUELTA ENVIADA A GOOGLE!</div>
+            <div id="avisoExito" style="color: var(--accent); font-weight: bold; display: none;">¡VUELTA REGISTRADA EN GOOGLE!</div>
         </div>
 
         <div id="adminPanel" style="background: #fff3e0; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #ff9800;">
             <h4 style="text-align: center; margin: 0;">⚙️ Panel Admin Harold</h4>
-            <button class="btn btn-admin" onclick="alert(JSON.stringify(puntosFijos))">📍 VER COORDENADAS RUTA</button>
+            <button class="btn" style="background:#3498db; color:white; font-size:0.8em;" onclick="alert(JSON.stringify(puntosFijos))">📍 VER COORDENADAS</button>
             <button class="btn" style="background:#2c3e50; color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel Local</button>
         </div>
     </div>
@@ -83,17 +82,16 @@
     let dbHistorial = [];
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-    // === CONFIGURACIÓN DEL ADMIN (PON TU CORREO AQUÍ) ===
+    // === CONFIGURACIÓN ===
     const ADMIN_EMAIL = "haroldco45@gmail.com"; 
-
-    // === URL Y PUNTOS ===
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
+    // Puntos separados ~50m para evitar solapamiento
     const puntosFijos = [
-        { lat: 7.9893716, lon: -75.1968034 }, 
-        { lat: 7.9890500, lon: -75.1968034 }, 
-        { lat: 7.9890500, lon: -75.1971500 }, 
-        { lat: 7.9893716, lon: -75.1971500 }  
+        { lat: 7.9893716, lon: -75.1968034 }, // Punto 1: Inicio
+        { lat: 7.9889000, lon: -75.1968034 }, // Punto 2: Sur
+        { lat: 7.9889000, lon: -75.1973000 }, // Punto 3: Oeste
+        { lat: 7.9893716, lon: -75.1973000 }  // Punto 4: Cierre Meta
     ];
 
     function iniciarReloj() {
@@ -109,11 +107,12 @@
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS ACTIVO - BUSCANDO PUNTOS";
+            status.innerText = "📍 GPS ACTIVO - SIGUE LA RUTA";
 
             puntosFijos.forEach((p, i) => {
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
-                if (dist <= 0.030) { 
+                // RANGO DE 25M PARA DETECCIÓN SEGURA
+                if (dist <= 0.025) { 
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
                             marcarPunto(i);
@@ -155,11 +154,13 @@
         });
 
         document.getElementById('avisoExito').style.display = 'block';
+        
+        // RESET DE SEGURIDAD PARA LA SIGUIENTE VUELTA
         setTimeout(() => {
             document.getElementById('avisoExito').style.display = 'none';
             progresoActual = [false, false, false, false];
             for(let i=0; i<4; i++) document.getElementById('dot'+i).classList.remove('active');
-        }, 4000);
+        }, 5000); // Espera 5 segundos para limpiar la interfaz
     }
 
     function calcularDist(lat1, lon1, lat2, lon2) {
@@ -173,18 +174,13 @@
     function autenticar() {
         const n = document.getElementById('regNombre').value;
         const e = document.getElementById('email').value.toLowerCase();
-        
         if(n && e) {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
             document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + n.toUpperCase();
-            
-            // SI EL CORREO COINCIDE, MUESTRA EL PANEL NARANJA
             if (e === ADMIN_EMAIL) {
                 document.getElementById('adminPanel').classList.add('active');
             }
-        } else {
-            alert("Por favor ingresa nombre y correo.");
         }
     }
 
@@ -192,7 +188,7 @@
         const ws = XLSX.utils.json_to_sheet(dbHistorial);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
-        XLSX.writeFile(wb, "Reporte_Local.xlsx");
+        XLSX.writeFile(wb, "Reporte_ClubMilla.xlsx");
     }
 </script>
 </body>
