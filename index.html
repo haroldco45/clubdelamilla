@@ -112,7 +112,7 @@
             puntosFijos.forEach((p, i) => {
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
                 // RANGO DE 25M PARA DETECCIÓN SEGURA
-                if (dist <= 0.025) { 
+                if (dist <= 0.020) { 
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
                             marcarPunto(i);
