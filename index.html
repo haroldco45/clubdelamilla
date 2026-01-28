@@ -113,7 +113,7 @@
 
             puntosFijos.forEach((p, i) => {
                 const dist = calcularDist(lat, lon, p.lat, p.lon);
-                if (dist <= 0.020) { 
+                if (dist <= 0.030) { 
                     if (i === 0 || (progresoActual[i-1] && !progresoActual[i])) {
                         if (!progresoActual[i]) {
                             marcarPunto(i);
