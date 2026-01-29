@@ -3,149 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milla Virtual | Vibras Positivas</title>
+    <title>Milla Virtual | Global</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2c3e50; --accent: #9b59b6; --bg: #f4f7f6; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        .header-virtual { text-align: center; background: var(--accent); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .header { text-align: center; background: var(--accent); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .stats { background: #f3e5f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
         #loginSection, #appSection { display: none; }
         .active { display: block !important; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; color: white; }
-        .velocidad-box { font-size: 0.9em; color: var(--accent); font-weight: bold; margin-top: 10px; background: #eee; padding: 5px; border-radius: 5px; }
+        #historial { text-align: left; font-size: 0.8em; margin-top: 10px; display: none; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
     </style>
 </head>
-<body>
-
+<body onload="iniciarReloj()">
 <div class="container">
-    <div class="header-virtual">
-        <strong style="letter-spacing: 1px;">🌍 EL CLUB DE LA MILLA GLOBAL</strong>
-        <div id="reloj" style="font-size: 1.2em;">00:00:00</div>
+    <div class="header">
+        <strong style="letter-spacing: 1px;">🌍 MILLA VIRTUAL GLOBAL</strong>
+        <div id="reloj">00:00:00</div>
     </div>
 
     <div id="loginSection" class="active">
-        <p style="font-size: 0.9em; text-align: center;">Compite con Caucasia desde cualquier lugar del mundo.</p>
-        <input type="text" id="regNombre" placeholder="Tu Nombre">
-        <input type="email" id="email" placeholder="Tu Correo">
-        <button class="btn" style="background: var(--accent);" onclick="autenticar()">ACTIVAR MODO VIRTUAL</button>
+        <input type="text" id="regNombre" placeholder="Tu Nombre" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="email" id="email" placeholder="Tu Correo" style="width:100%; padding:10px; margin-bottom:10px;">
+        <button class="btn" style="background: var(--accent);" onclick="autenticar()">INICIAR DESAFÍO</button>
     </div>
 
     <div id="appSection">
-        <h3 id="displayUser" style="text-align:center; margin-bottom:5px;">🏃 CORREDOR VIRTUAL</h3>
-        <div id="statusGps" style="text-align:center; font-size: 0.8em; color: #666;">Buscando satélites...</div>
-        
+        <h3 id="displayUser" style="text-align:center;">🏃 CORREDOR GLOBAL</h3>
+        <div id="velocidad" style="text-align:center; font-weight:bold; color:var(--accent);">Velocidad: 0.0 km/h</div>
         <div class="stats">
             <small>DISTANCIA RECORRIDA</small>
-            <div style="font-size: 2.8em; font-weight: 600;" id="distancia">0 m</div>
-            <div id="velocidad" class="velocidad-box">Velocidad: 0.0 km/h</div>
-            <hr style="border: 0; border-top: 1px solid #d1c4e9; margin: 15px 0;">
-            <small>VUELTAS SUMADAS AL CLUB</small>
-            <div style="font-size: 2.2em; font-weight: 600;" id="vueltas">0</div>
+            <div style="font-size: 2.5em; font-weight: 600;" id="distancia">0 m</div>
+            <hr>
+            <small>VUELTAS VIRTUALES</small>
+            <div style="font-size: 2em; font-weight: 600;" id="vueltas">0</div>
+            <button onclick="verHistorial()" style="background:none; border:1px solid var(--accent); color:var(--accent); padding:5px 10px; border-radius:15px; font-size:0.7em; margin-top:10px; cursor:pointer;">📜 Ver mi histórico</button>
+            <div id="historial"></div>
         </div>
-        
-        <p style="font-size: 0.7em; color: #888; text-align: center;">Tu progreso se sincroniza con el ranking de Caucasia.</p>
     </div>
 </div>
 
 <script>
-    let vLocales = 0;
-    let distanciaTotal = 0;
-    let ultimaPos = null;
-    const METROS_POR_VUELTA = 300; 
-    // Tu URL de Google Sheets
-    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
+    let vLocales = 0, distanciaTotal = 0, ultimaPos = null, dbHistorial = [];
+    const METROS_VUELTA = 300;
+    const URL_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
+
+    function iniciarReloj() { setInterval(() => { document.getElementById('reloj').innerText = new Date().toLocaleTimeString(); }, 1000); }
 
     function autenticar() {
-        const nombre = document.getElementById('regNombre').value;
-        if(nombre && document.getElementById('email').value) {
+        if(document.getElementById('regNombre').value && document.getElementById('email').value) {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
-            document.getElementById('displayUser').innerText = "🏃 " + nombre.toUpperCase();
-            speak("Modo virtual iniciado. ¡Buena suerte!");
-            iniciarGpsVirtual();
+            speak("Modo virtual iniciado.");
+            iniciarGps();
         }
     }
 
-    function iniciarGpsVirtual() {
+    function iniciarGps() {
         navigator.geolocation.watchPosition(pos => {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            
-            // Velocímetro en tiempo real
-            const velKmH = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0.0";
-            document.getElementById('velocidad').innerText = `Velocidad actual: ${velKmH} km/h`;
+            const lat = pos.coords.latitude, lon = pos.coords.longitude;
+            const vel = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0.0";
+            document.getElementById('velocidad').innerText = `Velocidad: ${vel} km/h`;
 
             if (ultimaPos) {
-                const d = calcularDistMetros(ultimaPos.lat, ultimaPos.lon, lat, lon);
-                // Umbral de sensibilidad para caminar (0.8 metros)
-                if (d > 0.8 && d < 40) { 
-                    distanciaTotal += d;
-                    actualizarInterfaz();
+                const d = calc(ultimaPos.lat, ultimaPos.lon, lat, lon);
+                if (d > 0.8) { 
+                    distanciaTotal += d; 
+                    document.getElementById('distancia').innerText = Math.round(distanciaTotal) + " m";
+                    if (Math.round(distanciaTotal) % 100 === 0) speak(Math.round(distanciaTotal) + " metros");
+                    if (distanciaTotal >= (vLocales + 1) * METROS_VUELTA) registrar();
                 }
             }
-            ultimaPos = { lat, lon };
-            document.getElementById('statusGps').innerText = "📍 GPS CONECTADO";
-        }, err => {
-            document.getElementById('statusGps').innerText = "⚠️ Error: Activa el GPS";
-        }, { 
-            enableHighAccuracy: true, 
-            maximumAge: 0, 
-            timeout: 5000 
-        });
+            ultimaPos = {lat, lon};
+        }, null, { enableHighAccuracy: true });
     }
 
-    function actualizarInterfaz() {
-        const distRedondeada = Math.round(distanciaTotal);
-        document.getElementById('distancia').innerText = distRedondeada + " m";
-        
-        // Voz cada 100 metros
-        if (distRedondeada > 0 && distRedondeada % 100 === 0) {
-            speak(`Llevas ${distRedondeada} metros`);
-        }
-
-        if (distanciaTotal >= (vLocales + 1) * METROS_POR_VUELTA) {
-            registrarVueltaVirtual();
-        }
-    }
-
-    function registrarVueltaVirtual() {
+    function registrar() {
         vLocales++;
         document.getElementById('vueltas').innerText = vLocales;
-        speak("¡Vuelta completada! Sincronizando datos");
-        
-        const ahora = new Date();
-        const datos = { 
-            Nombre: document.getElementById('regNombre').value + " (VIRTUAL)", 
-            Vueltas: vLocales, 
-            Fecha: ahora.toLocaleDateString('es-CO'), 
-            Hora: ahora.toLocaleTimeString('en-US'),
-            Correo: document.getElementById('email').value 
-        };
+        const hora = new Date().toLocaleTimeString();
+        dbHistorial.push({Hora: hora, Vuelta: vLocales});
+        speak("Vuelta completada");
 
-        fetch(URL_GOOGLE_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify(datos) });
-        if(navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 500]);
+        fetch(URL_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
+            Nombre: document.getElementById('regNombre').value + " (VIRTUAL)",
+            Vueltas: vLocales, Correo: document.getElementById('email').value,
+            Fecha: new Date().toLocaleDateString(), Hora: hora
+        })});
+        if(navigator.vibrate) navigator.vibrate([200, 100, 500]);
     }
 
-    function speak(texto) {
-        const msg = new SpeechSynthesisUtterance(texto);
-        msg.lang = 'es-ES';
-        window.speechSynthesis.speak(msg);
+    function verHistorial() {
+        const h = document.getElementById('historial');
+        h.style.display = h.style.display === 'block' ? 'none' : 'block';
+        h.innerHTML = dbHistorial.map(r => `🌐 Vuelta ${r.Vuelta} - ${r.Hora}`).join('<br>') || "Sin registros";
     }
 
-    function calcularDistMetros(lat1, lon1, lat2, lon2) {
-        const R = 6371000; 
-        const dLat = (lat2-lat1)*Math.PI/180;
-        const dLon = (lon2-lon1)*Math.PI/180;
+    function speak(t) { const m = new SpeechSynthesisUtterance(t); m.lang = 'es-ES'; window.speechSynthesis.speak(m); }
+
+    function calc(lat1, lon1, lat2, lon2) {
+        const R = 6371000, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
         const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-
-    setInterval(() => {
-        document.getElementById('reloj').innerText = new Date().toLocaleTimeString();
-    }, 1000);
 </script>
 </body>
 </html>
