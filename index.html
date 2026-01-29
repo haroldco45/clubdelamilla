@@ -22,8 +22,7 @@
         .dot { width: 45px; height: 45px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #777; transition: 0.3s; }
         .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); color: white; transform: scale(1.1); }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; animation: fade 0.5s; }
-        @keyframes fade { from {opacity: 0;} to {opacity: 1;} }
+        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -49,10 +48,10 @@
         <h3 id="displayUser" style="text-align:center;">🏃 PARTICIPANTE</h3>
         
         <div id="gpsPrompt" style="background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #2196f3;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS RUTA 2 PUNTOS</button>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS (MODO BOLSILLO)</button>
         </div>
 
-        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando ubicación...</span>
+        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">GPS Inactivo</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
             <small>Ruta: Salida(1) → Mitad(2) → Meta(1)</small>
@@ -80,15 +79,15 @@
     let progresoActual = [false, false]; 
     let bloqueado = false; 
     let dbHistorial = [];
+    // Sonido de campana pre-cargado
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
     const ADMIN_EMAIL = "haroldco45@gmail.com"; 
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
-    // COORDENADAS CAPTURADAS POR HAROLD
     const puntosFijos = [
-        { lat: 7.9893462, lon: -75.1968626 }, // Punto 1: Salida
-        { lat: 7.9895668, lon: -75.197858 }   // Punto 2: Mitad
+        { lat: 7.9893462, lon: -75.1968626 }, 
+        { lat: 7.9895668, lon: -75.197858 }   
     ];
 
     function iniciarReloj() {
@@ -100,42 +99,37 @@
     }
 
     function activarSensorGPS() {
+        // Opción para que el navegador mantenga el GPS activo aunque se minimice
         navigator.geolocation.watchPosition(pos => {
             if (bloqueado) return; 
 
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS ACTIVO - EN RUTA";
+            status.innerText = "📍 GPS TRABAJANDO (PUEDES GUARDAR EL CELULAR)";
 
-            // 1. Detectar Salida (Punto 1)
             if (!progresoActual[0]) {
-                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) {
-                    marcarPunto(0);
-                }
+                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) marcarPunto(0);
             } 
-            // 2. Detectar Mitad (Punto 2)
             else if (progresoActual[0] && !progresoActual[1]) {
-                if (calcularDist(lat, lon, puntosFijos[1].lat, puntosFijos[1].lon) <= 0.025) {
-                    marcarPunto(1);
-                }
+                if (calcularDist(lat, lon, puntosFijos[1].lat, puntosFijos[1].lon) <= 0.025) marcarPunto(1);
             }
-            // 3. Regreso a Salida (Meta)
             else if (progresoActual[1]) {
-                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) {
-                    registrarVueltaAuto();
-                }
+                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) registrarVueltaAuto();
             }
-
-        }, null, { enableHighAccuracy: true, maximumAge: 0 });
+        }, err => console.error(err), { 
+            enableHighAccuracy: true, 
+            maximumAge: 0,
+            timeout: 5000 
+        });
         document.getElementById('gpsPrompt').style.display = 'none';
     }
 
     function marcarPunto(idx) {
         progresoActual[idx] = true;
         document.getElementById('dot'+idx).classList.add('active');
-        bell.play();
-        if(navigator.vibrate) navigator.vibrate(200);
+        bell.play().catch(e => console.log("Audio pendiente de interacción")); // Evita errores de navegador
+        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); // Vibración triple para avisar en el bolsillo
     }
 
     function registrarVueltaAuto() {
@@ -157,8 +151,8 @@
 
         const aviso = document.getElementById('avisoExito');
         aviso.style.display = 'block';
+        if(navigator.vibrate) navigator.vibrate(500); // Vibración larga al completar la vuelta
         
-        // REDUCIDO A 3 SEGUNDOS PARA QUE NO TENGAS QUE DEVOLVERTE
         setTimeout(() => {
             aviso.style.display = 'none';
             progresoActual = [false, false];
