@@ -3,189 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club de la Milla | Vibras Positivas</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Club de la Milla | Caucasia</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f8f9fa; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        .reloj-container { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        #reloj { font-size: 1.6em; font-weight: 600; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
-        .btn-go { background: var(--accent); color: white; }
+        .header { text-align: center; background: var(--primary); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .stats { background: #f1f8f5; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid var(--accent); text-align: center; }
-        #loginSection, #appSection, #adminPanel { display: none; }
+        #loginSection, #appSection { display: none; }
         .active { display: block !important; }
-        .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
-        .checkpoint-list { display: flex; justify-content: space-around; margin: 10px 40px; }
-        .dot { width: 45px; height: 45px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #777; transition: 0.3s; }
-        .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); color: white; transform: scale(1.1); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; }
+        .dot { width: 45px; height: 45px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.3s; }
+        .dot.active { background: var(--accent); color: white; transform: scale(1.1); }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; color: white; }
+        #historial { text-align: left; font-size: 0.8em; margin-top: 10px; display: none; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
     </style>
 </head>
 <body onload="iniciarReloj()">
-
 <div class="container">
-    <div style="text-align: center; margin-bottom: 10px;">
-        <strong style="color: var(--accent); letter-spacing: 1px;">✨ VIBRAS POSITIVAS</strong>
-    </div>
-
-    <div class="reloj-container">
-        <div id="fecha">Cargando fecha...</div>
-        <div id="reloj">--:--:-- --</div>
+    <div class="header">
+        <strong style="color: #27ae60;">✨ VIBRAS POSITIVAS</strong>
+        <div id="reloj">00:00:00</div>
     </div>
 
     <div id="loginSection" class="active">
         <h2 style="text-align:center;">Club de la Milla</h2>
-        <input type="text" id="regNombre" placeholder="Tu Nombre">
-        <input type="email" id="email" placeholder="Tu Correo">
-        <button class="btn btn-go" onclick="autenticar()">INGRESAR</button>
+        <input type="text" id="regNombre" placeholder="Tu Nombre" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="email" id="email" placeholder="Tu Correo" style="width:100%; padding:10px; margin-bottom:10px;">
+        <button class="btn" style="background: var(--accent);" onclick="autenticar()">INGRESAR</button>
     </div>
 
     <div id="appSection">
         <h3 id="displayUser" style="text-align:center;">🏃 PARTICIPANTE</h3>
+        <button id="btnGps" class="btn" style="background: #2196f3;" onclick="activarGps()">📡 ACTIVAR GPS (MODO BOLSILLO)</button>
         
-        <div id="gpsPrompt" style="background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #2196f3;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS (MODO BOLSILLO)</button>
-        </div>
-
-        <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">GPS Inactivo</span>
-        
-        <div style="text-align: center; margin-bottom: 10px;">
-            <small>Ruta: Salida(1) → Mitad(2) → Meta(1)</small>
-            <div class="checkpoint-list">
-                <div id="dot0" class="dot">1</div>
-                <div id="dot1" class="dot">2</div>
-            </div>
+        <div style="display:flex; justify-content: space-around; margin: 20px 0;">
+            <div id="dot0" class="dot">1</div>
+            <div id="dot1" class="dot">2</div>
         </div>
 
         <div class="stats">
             <small>VUELTAS VALIDADAS</small>
-            <div style="font-size: 3.5em; font-weight: 600;" id="misVueltas">0</div>
-            <div id="avisoExito">¡VUELTA REGISTRADA! ✨</div>
-        </div>
-
-        <div id="adminPanel" style="background: #fff3e0; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #ff9800;">
-            <h4 style="text-align: center; margin: 0;">⚙️ Panel Admin Harold</h4>
-            <button class="btn" style="background:#2c3e50; color:white; font-size:0.8em;" onclick="exportarInforme()">📥 Descargar Excel Local</button>
+            <div style="font-size: 3em; font-weight: 600;" id="misVueltas">0</div>
+            <button onclick="verHistorial()" style="background:none; border:1px solid var(--accent); color:var(--accent); padding:5px 10px; border-radius:15px; font-size:0.7em; margin-top:10px; cursor:pointer;">📜 Ver mi histórico</button>
+            <div id="historial"></div>
         </div>
     </div>
 </div>
 
 <script>
-    let vLocales = 0;
-    let progresoActual = [false, false]; 
-    let bloqueado = false; 
-    let dbHistorial = [];
-    // Sonido de campana pre-cargado
+    let vLocales = 0, progresoActual = [false, false], bloqueado = false, dbHistorial = [];
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    const URL_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
+    const puntos = [{lat: 7.9893462, lon: -75.1968626}, {lat: 7.9895668, lon: -75.197858}];
 
-    const ADMIN_EMAIL = "haroldco45@gmail.com"; 
-    const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
-
-    const puntosFijos = [
-        { lat: 7.9893462, lon: -75.1968626 }, 
-        { lat: 7.9895668, lon: -75.197858 }   
-    ];
-
-    function iniciarReloj() {
-        setInterval(() => {
-            const ahora = new Date();
-            document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-CO');
-            document.getElementById('reloj').innerText = ahora.toLocaleTimeString('en-US');
-        }, 1000);
-    }
-
-    function activarSensorGPS() {
-        // Opción para que el navegador mantenga el GPS activo aunque se minimice
-        navigator.geolocation.watchPosition(pos => {
-            if (bloqueado) return; 
-
-            const status = document.getElementById('gpsStatus');
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS TRABAJANDO (PUEDES GUARDAR EL CELULAR)";
-
-            if (!progresoActual[0]) {
-                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) marcarPunto(0);
-            } 
-            else if (progresoActual[0] && !progresoActual[1]) {
-                if (calcularDist(lat, lon, puntosFijos[1].lat, puntosFijos[1].lon) <= 0.025) marcarPunto(1);
-            }
-            else if (progresoActual[1]) {
-                if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) registrarVueltaAuto();
-            }
-        }, err => console.error(err), { 
-            enableHighAccuracy: true, 
-            maximumAge: 0,
-            timeout: 5000 
-        });
-        document.getElementById('gpsPrompt').style.display = 'none';
-    }
-
-    function marcarPunto(idx) {
-        progresoActual[idx] = true;
-        document.getElementById('dot'+idx).classList.add('active');
-        bell.play().catch(e => console.log("Audio pendiente de interacción")); // Evita errores de navegador
-        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); // Vibración triple para avisar en el bolsillo
-    }
-
-    function registrarVueltaAuto() {
-        bloqueado = true; 
-        vLocales++;
-        document.getElementById('misVueltas').innerText = vLocales;
-        
-        const ahora = new Date();
-        const datos = { 
-            Nombre: document.getElementById('regNombre').value, 
-            Vueltas: vLocales, 
-            Fecha: ahora.toLocaleDateString('es-CO'), 
-            Hora: ahora.toLocaleTimeString('en-US'),
-            Correo: document.getElementById('email').value 
-        };
-        dbHistorial.push(datos);
-
-        fetch(URL_GOOGLE_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify(datos) });
-
-        const aviso = document.getElementById('avisoExito');
-        aviso.style.display = 'block';
-        if(navigator.vibrate) navigator.vibrate(500); // Vibración larga al completar la vuelta
-        
-        setTimeout(() => {
-            aviso.style.display = 'none';
-            progresoActual = [false, false];
-            document.getElementById('dot0').classList.remove('active');
-            document.getElementById('dot1').classList.remove('active');
-            bloqueado = false; 
-        }, 3000); 
-    }
-
-    function calcularDist(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2-lat1)*Math.PI/180;
-        const dLon = (lon2-lon1)*Math.PI/180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
+    function iniciarReloj() { setInterval(() => { document.getElementById('reloj').innerText = new Date().toLocaleTimeString(); }, 1000); }
 
     function autenticar() {
-        const n = document.getElementById('regNombre').value;
-        const e = document.getElementById('email').value.toLowerCase();
-        if(n && e) {
+        if(document.getElementById('regNombre').value && document.getElementById('email').value) {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
-            document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + n.toUpperCase();
-            if (e === ADMIN_EMAIL) document.getElementById('adminPanel').classList.add('active');
+            document.getElementById('displayUser').innerText = "🏃 " + document.getElementById('regNombre').value.toUpperCase();
         }
     }
 
-    function exportarInforme() {
-        const ws = XLSX.utils.json_to_sheet(dbHistorial);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
-        XLSX.writeFile(wb, "Reporte_ClubMilla.xlsx");
+    function activarGps() {
+        document.getElementById('btnGps').style.display = 'none';
+        navigator.geolocation.watchPosition(pos => {
+            if (bloqueado) return;
+            const lat = pos.coords.latitude, lon = pos.coords.longitude;
+            if (!progresoActual[0]) { if (dist(lat, lon, puntos[0].lat, puntos[0].lon) <= 0.020) marcar(0); }
+            else if (!progresoActual[1]) { if (dist(lat, lon, puntos[1].lat, puntos[1].lon) <= 0.025) marcar(1); }
+            else { if (dist(lat, lon, puntos[0].lat, puntos[0].lon) <= 0.020) registrar(); }
+        }, null, { enableHighAccuracy: true });
+    }
+
+    function marcar(idx) {
+        progresoActual[idx] = true;
+        document.getElementById('dot'+idx).classList.add('active');
+        bell.play();
+        if(navigator.vibrate) navigator.vibrate(200);
+    }
+
+    function registrar() {
+        bloqueado = true; vLocales++;
+        document.getElementById('misVueltas').innerText = vLocales;
+        const hora = new Date().toLocaleTimeString();
+        dbHistorial.push({Hora: hora, Vuelta: vLocales});
+        
+        fetch(URL_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
+            Nombre: document.getElementById('regNombre').value,
+            Vueltas: vLocales, Correo: document.getElementById('email').value,
+            Fecha: new Date().toLocaleDateString(), Hora: hora
+        })});
+
+        if(navigator.vibrate) navigator.vibrate(500);
+        setTimeout(() => {
+            progresoActual = [false, false];
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            bloqueado = false;
+        }, 3000);
+    }
+
+    function verHistorial() {
+        const h = document.getElementById('historial');
+        h.style.display = h.style.display === 'block' ? 'none' : 'block';
+        h.innerHTML = dbHistorial.map(r => `✅ Vuelta ${r.Vuelta} - ${r.Hora}`).join('<br>') || "Sin registros";
+    }
+
+    function dist(lat1, lon1, lat2, lon2) {
+        const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 </script>
 </body>
