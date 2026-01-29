@@ -19,9 +19,10 @@
         .active { display: block !important; }
         .gps-indicator { font-size: 0.85em; font-weight: bold; margin-bottom: 10px; display: block; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .checkpoint-list { display: flex; justify-content: space-around; margin: 10px 40px; }
-        .dot { width: 40px; height: 40px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #777; transition: 0.3s; }
+        .dot { width: 45px; height: 45px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #777; transition: 0.3s; }
         .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); color: white; transform: scale(1.1); }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -47,13 +48,13 @@
         <h3 id="displayUser" style="text-align:center;">🏃 PARTICIPANTE</h3>
         
         <div id="gpsPrompt" style="background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #2196f3;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS RUTA 2 PUNTOS</button>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS AUTOMÁTICO</button>
         </div>
 
         <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando ubicación...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Ruta: Salida(1) → Punto Medio(2) → Regreso a Salida</small>
+            <small>Circuito: Salida(1) → Punto Medio(2) → Meta(1)</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot">1</div>
                 <div id="dot1" class="dot">2</div>
@@ -63,7 +64,7 @@
         <div class="stats">
             <small>VUELTAS VALIDADAS</small>
             <div style="font-size: 3.5em; font-weight: 600;" id="misVueltas">0</div>
-            <div id="avisoExito" style="color: var(--accent); font-weight: bold; display: none;">¡VUELTA REGISTRADA! ✨</div>
+            <div id="avisoExito">¡VUELTA REGISTRADA! ✨</div>
         </div>
 
         <div id="adminPanel" style="background: #fff3e0; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px solid #ff9800;">
@@ -76,17 +77,16 @@
 <script>
     let vLocales = 0;
     let progresoActual = [false, false]; 
+    let bloqueado = false; // Nueva variable para evitar el salto de vueltas
     let dbHistorial = [];
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-    // CONFIGURACIÓN DE ADMIN Y GOOGLE
     const ADMIN_EMAIL = "haroldco45@gmail.com"; 
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
-    // COORDENADAS CAPTURADAS POR HAROLD
     const puntosFijos = [
-        { lat: 7.9893462, lon: -75.1968626 }, // Punto 1: Salida y Meta
-        { lat: 7.9895668, lon: -75.197858 }   // Punto 2: Mitad de recorrido
+        { lat: 7.9893462, lon: -75.1968626 }, // Punto 1: Salida
+        { lat: 7.9895668, lon: -75.197858 }   // Punto 2: Mitad
     ];
 
     function iniciarReloj() {
@@ -99,25 +99,26 @@
 
     function activarSensorGPS() {
         navigator.geolocation.watchPosition(pos => {
+            if (bloqueado) return; // Si acabamos de registrar vuelta, ignoramos el GPS brevemente
+
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            status.innerText = "📍 GPS ACTIVADO - SIGUE LA RUTA";
+            status.innerText = "📍 GPS ACTIVO - EN RUTA";
 
-            // LÓGICA DE CIRCULACIÓN DE 2 PUNTOS
             // 1. Detectar Salida (Punto 1)
             if (!progresoActual[0]) {
                 if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) {
                     marcarPunto(0);
                 }
             } 
-            // 2. Detectar Mitad (Punto 2) solo si ya marcó el 1
+            // 2. Detectar Mitad (Punto 2)
             else if (progresoActual[0] && !progresoActual[1]) {
                 if (calcularDist(lat, lon, puntosFijos[1].lat, puntosFijos[1].lon) <= 0.025) {
                     marcarPunto(1);
                 }
             }
-            // 3. Detectar Regreso a Salida (Meta) solo si ya pasó por el 2
+            // 3. Regreso a Salida (Meta)
             else if (progresoActual[1]) {
                 if (calcularDist(lat, lon, puntosFijos[0].lat, puntosFijos[0].lon) <= 0.020) {
                     registrarVueltaAuto();
@@ -136,35 +137,33 @@
     }
 
     function registrarVueltaAuto() {
+        bloqueado = true; // Bloqueamos detecciones para evitar saltos de vueltas
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
+        
         const ahora = new Date();
         const datos = { 
             Nombre: document.getElementById('regNombre').value, 
             Vueltas: vLocales, 
             Fecha: ahora.toLocaleDateString('es-CO'), 
-            Hora: document.getElementById('reloj').innerText,
+            Hora: ahora.toLocaleTimeString('en-US'),
             Correo: document.getElementById('email').value 
         };
         dbHistorial.push(datos);
 
-        // Envío a Google Sheets del Admin
-        fetch(URL_GOOGLE_SHEETS, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(datos)
-        });
+        fetch(URL_GOOGLE_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify(datos) });
 
-        document.getElementById('avisoExito').style.display = 'block';
+        const aviso = document.getElementById('avisoExito');
+        aviso.style.display = 'block';
         
-        // RESET PARA LA SIGUIENTE VUELTA
+        // Esperamos 10 segundos antes de permitir una nueva vuelta
         setTimeout(() => {
-            document.getElementById('avisoExito').style.display = 'none';
-            progresoActual = [false, false]; // Reinicia la secuencia
+            aviso.style.display = 'none';
+            progresoActual = [false, false];
             document.getElementById('dot0').classList.remove('active');
             document.getElementById('dot1').classList.remove('active');
-            alert("¡Excelente! Vuelta registrada. Arranca de nuevo desde el Punto 1.");
-        }, 4000);
+            bloqueado = false; // Desbloqueamos el sensor
+        }, 10000); 
     }
 
     function calcularDist(lat1, lon1, lat2, lon2) {
@@ -182,9 +181,7 @@
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
             document.getElementById('displayUser').innerText = "🏃 PARTICIPANTE: " + n.toUpperCase();
-            if (e === ADMIN_EMAIL) {
-                document.getElementById('adminPanel').classList.add('active');
-            }
+            if (e === ADMIN_EMAIL) document.getElementById('adminPanel').classList.add('active');
         }
     }
 
