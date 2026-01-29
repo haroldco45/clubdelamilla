@@ -22,7 +22,8 @@
         .dot { width: 45px; height: 45px; border-radius: 50%; background: #ddd; border: 2px solid #bbb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #777; transition: 0.3s; }
         .dot.active { background: var(--accent); border-color: #1b5e20; box-shadow: 0 0 15px var(--accent); color: white; transform: scale(1.1); }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; }
+        #avisoExito { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold; display: none; text-align: center; border: 1px solid #c8e6c9; animation: fade 0.5s; }
+        @keyframes fade { from {opacity: 0;} to {opacity: 1;} }
     </style>
 </head>
 <body onload="iniciarReloj()">
@@ -48,13 +49,13 @@
         <h3 id="displayUser" style="text-align:center;">🏃 PARTICIPANTE</h3>
         
         <div id="gpsPrompt" style="background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; border: 1px solid #2196f3;">
-            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS AUTOMÁTICO</button>
+            <button onclick="activarSensorGPS()" style="background: #2196f3; color:white; border:none; padding:12px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%;">📡 ACTIVAR GPS RUTA 2 PUNTOS</button>
         </div>
 
         <span id="gpsStatus" class="gps-indicator" style="background: #f8f9fa;">Esperando ubicación...</span>
         
         <div style="text-align: center; margin-bottom: 10px;">
-            <small>Circuito: Salida(1) → Punto Medio(2) → Meta(1)</small>
+            <small>Ruta: Salida(1) → Mitad(2) → Meta(1)</small>
             <div class="checkpoint-list">
                 <div id="dot0" class="dot">1</div>
                 <div id="dot1" class="dot">2</div>
@@ -77,13 +78,14 @@
 <script>
     let vLocales = 0;
     let progresoActual = [false, false]; 
-    let bloqueado = false; // Nueva variable para evitar el salto de vueltas
+    let bloqueado = false; 
     let dbHistorial = [];
     const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
     const ADMIN_EMAIL = "haroldco45@gmail.com"; 
     const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
+    // COORDENADAS CAPTURADAS POR HAROLD
     const puntosFijos = [
         { lat: 7.9893462, lon: -75.1968626 }, // Punto 1: Salida
         { lat: 7.9895668, lon: -75.197858 }   // Punto 2: Mitad
@@ -99,7 +101,7 @@
 
     function activarSensorGPS() {
         navigator.geolocation.watchPosition(pos => {
-            if (bloqueado) return; // Si acabamos de registrar vuelta, ignoramos el GPS brevemente
+            if (bloqueado) return; 
 
             const status = document.getElementById('gpsStatus');
             const lat = pos.coords.latitude;
@@ -137,7 +139,7 @@
     }
 
     function registrarVueltaAuto() {
-        bloqueado = true; // Bloqueamos detecciones para evitar saltos de vueltas
+        bloqueado = true; 
         vLocales++;
         document.getElementById('misVueltas').innerText = vLocales;
         
@@ -156,14 +158,14 @@
         const aviso = document.getElementById('avisoExito');
         aviso.style.display = 'block';
         
-        // Esperamos 10 segundos antes de permitir una nueva vuelta
+        // REDUCIDO A 3 SEGUNDOS PARA QUE NO TENGAS QUE DEVOLVERTE
         setTimeout(() => {
             aviso.style.display = 'none';
             progresoActual = [false, false];
             document.getElementById('dot0').classList.remove('active');
             document.getElementById('dot1').classList.remove('active');
-            bloqueado = false; // Desbloqueamos el sensor
-        }, 10000); 
+            bloqueado = false; 
+        }, 3000); 
     }
 
     function calcularDist(lat1, lon1, lat2, lon2) {
