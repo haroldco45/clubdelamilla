@@ -6,49 +6,68 @@
     <title>Ranking Oficial | Club de la Milla</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 20px; text-align: center; }
-        .ranking-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #27ae60; color: white; padding: 12px; border-radius: 8px 8px 0 0; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        :root { --vibras-green: #27ae60; --vibras-dark: #2c3e50; }
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 20px; text-align: center; color: var(--vibras-dark); }
+        .ranking-card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; border-top: 8px solid var(--vibras-green); }
+        h2 { margin-bottom: 5px; color: var(--vibras-green); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+        th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px; border-bottom: 1px solid #f1f1f1; font-weight: 500; }
+        .pos { font-weight: 600; color: var(--vibras-green); width: 40px; }
+        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600; display: inline-block; }
+        .virtual-tag { font-size: 0.6em; background: #9b59b6; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
     </style>
 </head>
 <body>
     <div class="ranking-card">
-        <h2>🏆 TABLERO DE LÍDERES</h2>
-        <p>¡Cada 3 vueltas es 1 Kilómetro de salud!</p>
-        <div id="tablaRanking">Cargando posiciones...</div>
+        <img src="https://via.placeholder.com/150x50?text=VIBRAS+POSITIVAS" alt="Logo" style="margin-bottom:10px; display:none;"> <h2>🏆 TABLERO DE LÍDERES</h2>
+        <p style="font-size: 0.9em; color: #666;">¡3 Vueltas = 1 Kilómetro de Vida!</p>
+        <div id="tablaRanking">Cargando la energía del Club...</div>
     </div>
 
     <script>
-        const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec"; // Reemplázala por tu URL de despliegue
+        const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
         async function cargarRanking() {
             try {
                 const response = await fetch(URL_GOOGLE);
                 const data = await response.json();
                 
-                // Ordenar por vueltas de mayor a menor
-                data.sort((a, b) => b.Vueltas - a.Vueltas);
+                // LÓGICA DE AGRUPACIÓN: Sumamos las vueltas por nombre
+                const resumen = {};
+                data.forEach(item => {
+                    const nombre = item.Nombre.trim();
+                    const vueltas = parseInt(item.Vueltas) || 0;
+                    if (!resumen[nombre] || vueltas > resumen[nombre]) {
+                        resumen[nombre] = vueltas; // Tomamos la vuelta más alta registrada para ese nombre
+                    }
+                });
 
-                let html = `<table><tr><th>Pos</th><th>Corredor</th><th>Vueltas</th><th>Km</th></tr>`;
-                data.slice(0, 10).forEach((user, index) => {
-                    const km = (user.Vueltas / 3).toFixed(1);
+                // Convertir a array y ordenar
+                const listaOrdenada = Object.keys(resumen).map(nombre => {
+                    return { nombre: nombre, vueltas: resumen[nombre] };
+                }).sort((a, b) => b.vueltas - a.vueltas);
+
+                let html = `<table><tr><th>Pos</th><th>Corredor</th><th>Vueltas</th><th>Distancia</th></tr>`;
+                listaOrdenada.slice(0, 10).forEach((user, index) => {
+                    const km = (user.vueltas / 3).toFixed(1);
+                    const esVirtual = user.nombre.includes("(VIRTUAL)");
+                    const nombreLimpio = user.nombre.replace("(VIRTUAL)", "");
+                    
                     html += `<tr>
-                        <td>${index + 1}º</td>
-                        <td>${user.Nombre}</td>
-                        <td>${user.Vueltas}</td>
+                        <td class="pos">${index + 1}º</td>
+                        <td style="text-align:left;">${nombreLimpio} ${esVirtual ? '<span class="virtual-tag">VIRTUAL</span>' : ''}</td>
+                        <td>${user.vueltas}</td>
                         <td><span class="km-badge">${km} km</span></td>
                     </tr>`;
                 });
                 html += `</table>`;
                 document.getElementById('tablaRanking').innerHTML = html;
             } catch (e) {
-                document.getElementById('tablaRanking').innerHTML = "Sincronizando datos en vivo...";
+                document.getElementById('tablaRanking').innerHTML = "Sincronizando registros...";
             }
         }
-        setInterval(cargarRanking, 30000); // Se actualiza cada 30 segundos
+        setInterval(cargarRanking, 30000);
         cargarRanking();
     </script>
 </body>
