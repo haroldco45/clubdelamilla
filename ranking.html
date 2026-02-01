@@ -15,12 +15,10 @@
         th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
         td { padding: 15px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.95em; }
         
-        /* Estilos de posición */
         .pos { font-weight: 600; color: var(--vibras-green); width: 45px; }
-        .top-1 { background: #fffdf2; } /* Resalte para el primer lugar */
+        .top-1 { background: #fffdf2; }
         .crown { color: var(--gold); font-size: 1.2em; }
         
-        /* Insignias */
         .km-badge { background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600; display: inline-block; }
         .virtual-tag { font-size: 0.6em; background: #9b59b6; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
         
@@ -30,7 +28,7 @@
 <body>
     <div class="ranking-card">
         <h2>🏆 TABLERO DE LÍDERES</h2>
-        <div class="subtitle">¡3 Vueltas = 1 Kilómetro de Energía Positiva!</div>
+        <div class="subtitle">¡Sumando Kilómetros de Energía Positiva!</div>
         
         <div id="tablaRanking">
             <div id="loading">Sincronizando con el satélite...</div>
@@ -38,7 +36,7 @@
     </div>
 
     <script>
-        // URL de tu implementación de Google Apps Script
+        // REEMPLAZA ESTA URL CON LA DE TU GOOGLE APPS SCRIPT
         const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
         async function cargarRanking() {
@@ -46,24 +44,24 @@
                 const response = await fetch(URL_GOOGLE);
                 const data = await response.json();
                 
-                // 1. LÓGICA DE AGRUPACIÓN: Sumamos o tomamos el máximo por nombre
+                // LÓGICA DE SUMATORIA ACUMULATIVA
                 const resumen = {};
                 data.forEach(item => {
                     const nombre = item.Nombre ? item.Nombre.trim() : "Anónimo";
                     const vueltas = parseInt(item.Vueltas) || 0;
                     
-                    // Solo guardamos la marca más alta de cada corredor
-                    if (!resumen[nombre] || vueltas > resumen[nombre]) {
-                        resumen[nombre] = vueltas;
+                    if (!resumen[nombre]) {
+                        resumen[nombre] = vueltas; // Primer registro
+                    } else {
+                        resumen[nombre] += vueltas; // SUMA LOS SIGUIENTES REGISTROS
                     }
                 });
 
-                // 2. Convertir el objeto a una lista para poder ordenarla
+                // Convertir a lista y ordenar de mayor a menor total
                 const listaOrdenada = Object.keys(resumen).map(nombre => {
                     return { nombre: nombre, vueltas: resumen[nombre] };
                 }).sort((a, b) => b.vueltas - a.vueltas);
 
-                // 3. Construir la tabla HTML
                 let html = `<table>
                     <tr>
                         <th>Pos</th>
@@ -73,7 +71,7 @@
                     </tr>`;
 
                 listaOrdenada.slice(0, 10).forEach((user, index) => {
-                    const km = (user.vueltas / 3).toFixed(1); // 3 vueltas = 1 km
+                    const km = (user.vueltas / 3).toFixed(1); 
                     const esVirtual = user.nombre.includes("(VIRTUAL)");
                     const nombreMostrar = user.nombre.replace("(VIRTUAL)", "").trim();
                     const esPrimero = index === 0;
@@ -92,14 +90,13 @@
                 document.getElementById('tablaRanking').innerHTML = html;
 
             } catch (e) {
-                console.error("Error al cargar:", e);
-                document.getElementById('tablaRanking').innerHTML = "<p style='color:red;'>Error al conectar con la base de datos.</p>";
+                console.error("Error:", e);
+                document.getElementById('tablaRanking').innerHTML = "<p>Actualizando datos...</p>";
             }
         }
 
-        // Actualización automática cada 30 segundos
-        setInterval(cargarRanking, 30000);
-        cargarRanking(); // Carga inicial
+        setInterval(cargarRanking, 30000); // Refresca cada 30 segundos
+        cargarRanking();
     </script>
 </body>
 </html>
