@@ -14,10 +14,9 @@
         #loginSection, #appSection { display: none; }
         .active { display: block !important; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; color: white; }
-        #historial { text-align: left; font-size: 0.8em; margin-top: 10px; display: none; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
     </style>
 </head>
-<body onload="iniciarReloj()">
+<body onload="verificarUsuario()">
 <div class="container">
     <div class="header">
         <strong style="letter-spacing: 1px;">🌍 MILLA VIRTUAL GLOBAL</strong>
@@ -25,40 +24,62 @@
     </div>
 
     <div id="loginSection" class="active">
-        <input type="text" id="regNombre" placeholder="Tu Nombre" style="width:100%; padding:10px; margin-bottom:10px;">
-        <input type="email" id="email" placeholder="Tu Correo" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="regNombre" placeholder="Tu Nombre" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="email" id="email" placeholder="Tu Correo" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
         <button class="btn" style="background: var(--accent);" onclick="autenticar()">INICIAR DESAFÍO</button>
     </div>
 
     <div id="appSection">
         <h3 id="displayUser" style="text-align:center;">🏃 CORREDOR GLOBAL</h3>
-        <div id="velocidad" style="text-align:center; font-weight:bold; color:var(--accent);">Velocidad: 0.0 km/h</div>
+        <span onclick="cerrarSesion()" style="display:block; text-align:center; font-size:0.7em; color:#888; cursor:pointer;">Cambiar de usuario</span>
+        
+        <div id="velocidad" style="text-align:center; font-weight:bold; color:var(--accent); margin-top:15px;">Velocidad: 0.0 km/h</div>
         <div class="stats">
             <small>DISTANCIA RECORRIDA</small>
             <div style="font-size: 2.5em; font-weight: 600;" id="distancia">0 m</div>
             <hr>
-            <small>VUELTAS VIRTUALES</small>
+            <small>VUELTAS VIRTUALES (300m c/u)</small>
             <div style="font-size: 2em; font-weight: 600;" id="vueltas">0</div>
-            <button onclick="verHistorial()" style="background:none; border:1px solid var(--accent); color:var(--accent); padding:5px 10px; border-radius:15px; font-size:0.7em; margin-top:10px; cursor:pointer;">📜 Ver mi histórico</button>
-            <div id="historial"></div>
         </div>
     </div>
 </div>
 
 <script>
-    let vLocales = 0, distanciaTotal = 0, ultimaPos = null, dbHistorial = [];
+    let vLocales = 0, distanciaTotal = 0, ultimaPos = null;
     const METROS_VUELTA = 300;
     const URL_SHEETS = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
 
     function iniciarReloj() { setInterval(() => { document.getElementById('reloj').innerText = new Date().toLocaleTimeString(); }, 1000); }
 
-    function autenticar() {
-        if(document.getElementById('regNombre').value && document.getElementById('email').value) {
+    function verificarUsuario() {
+        iniciarReloj();
+        const guardado = localStorage.getItem('usuarioMilla');
+        if (guardado) {
+            const user = JSON.parse(guardado);
+            document.getElementById('regNombre').value = user.nombre;
+            document.getElementById('email').value = user.email;
+            autenticar(true);
+        }
+    }
+
+    function autenticar(esAutomatico = false) {
+        const nom = document.getElementById('regNombre').value;
+        const em = document.getElementById('email').value;
+        if(nom && em) {
+            if(!esAutomatico) {
+                localStorage.setItem('usuarioMilla', JSON.stringify({nombre: nom, email: em}));
+            }
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('appSection').classList.add('active');
-            speak("Modo virtual iniciado.");
+            document.getElementById('displayUser').innerText = "🏃 " + nom.toUpperCase();
+            speak("Iniciando ruta virtual.");
             iniciarGps();
         }
+    }
+
+    function cerrarSesion() {
+        localStorage.removeItem('usuarioMilla');
+        location.reload();
     }
 
     function iniciarGps() {
@@ -72,7 +93,6 @@
                 if (d > 0.8) { 
                     distanciaTotal += d; 
                     document.getElementById('distancia').innerText = Math.round(distanciaTotal) + " m";
-                    if (Math.round(distanciaTotal) % 100 === 0) speak(Math.round(distanciaTotal) + " metros");
                     if (distanciaTotal >= (vLocales + 1) * METROS_VUELTA) registrar();
                 }
             }
@@ -83,22 +103,13 @@
     function registrar() {
         vLocales++;
         document.getElementById('vueltas').innerText = vLocales;
-        const hora = new Date().toLocaleTimeString();
-        dbHistorial.push({Hora: hora, Vuelta: vLocales});
         speak("Vuelta completada");
 
         fetch(URL_SHEETS, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
             Nombre: document.getElementById('regNombre').value + " (VIRTUAL)",
             Vueltas: vLocales, Correo: document.getElementById('email').value,
-            Fecha: new Date().toLocaleDateString(), Hora: hora
+            Fecha: new Date().toLocaleDateString(), Hora: new Date().toLocaleTimeString()
         })});
-        if(navigator.vibrate) navigator.vibrate([200, 100, 500]);
-    }
-
-    function verHistorial() {
-        const h = document.getElementById('historial');
-        h.style.display = h.style.display === 'block' ? 'none' : 'block';
-        h.innerHTML = dbHistorial.map(r => `🌐 Vuelta ${r.Vuelta} - ${r.Hora}`).join('<br>') || "Sin registros";
     }
 
     function speak(t) { const m = new SpeechSynthesisUtterance(t); m.lang = 'es-ES'; window.speechSynthesis.speak(m); }
