@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking Oficial | Club de la Milla</title>
+    <title>Reto Superarroz | Club de la Milla</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --vibras-green: #27ae60; --vibras-dark: #2c3e50; --gold: #f1c40f; }
+        :root { --vibras-green: #27ae60; --vibras-dark: #2c3e50; --gold: #f1c40f; --superarroz: #e67e22; }
         body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 15px; text-align: center; color: var(--vibras-dark); }
         .ranking-card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; border-top: 8px solid var(--vibras-green); }
-        h2 { margin-bottom: 5px; color: var(--vibras-green); letter-spacing: 1px; }
-        .subtitle { font-size: 0.9em; color: #666; margin-bottom: 20px; }
+        h2 { margin-bottom: 5px; color: var(--vibras-green); letter-spacing: 1px; text-transform: uppercase; }
+        .challenge-box { background: #fff9c4; padding: 10px; border-radius: 12px; border: 2px dashed var(--superarroz); margin-bottom: 20px; }
+        .subtitle { font-size: 0.95em; color: var(--vibras-dark); font-weight: 600; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
         th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
         td { padding: 15px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.95em; }
@@ -27,8 +29,11 @@
 </head>
 <body>
     <div class="ranking-card">
-        <h2>🏆 TABLERO DE LÍDERES</h2>
-        <div class="subtitle">¡Sumando Kilómetros de Energía Positiva!</div>
+        <h2>🏆 CLUB DE LA MILLA</h2>
+        
+        <div class="challenge-box">
+            <div class="subtitle">🌾 RETO: ¡Los primeros 60 KM ganan 1 paca de SUPERARROZ! 🌾</div>
+        </div>
         
         <div id="tablaRanking">
             <div id="loading">Sincronizando con el satélite...</div>
@@ -51,16 +56,20 @@
                     const vueltas = parseInt(item.Vueltas) || 0;
                     
                     if (!resumen[nombre]) {
-                        resumen[nombre] = vueltas; // Primer registro
+                        resumen[nombre] = vueltas;
                     } else {
-                        resumen[nombre] += vueltas; // SUMA LOS SIGUIENTES REGISTROS
+                        resumen[nombre] += vueltas;
                     }
                 });
 
-                // Convertir a lista y ordenar de mayor a menor total
                 const listaOrdenada = Object.keys(resumen).map(nombre => {
                     return { nombre: nombre, vueltas: resumen[nombre] };
                 }).sort((a, b) => b.vueltas - a.vueltas);
+
+                if (listaOrdenada.length === 0) {
+                    document.getElementById('tablaRanking').innerHTML = "<p style='padding:20px; color:#666;'>¡El tablero está limpio! Sé el primero en sumar hoy.</p>";
+                    return;
+                }
 
                 let html = `<table>
                     <tr>
@@ -90,12 +99,11 @@
                 document.getElementById('tablaRanking').innerHTML = html;
 
             } catch (e) {
-                console.error("Error:", e);
-                document.getElementById('tablaRanking').innerHTML = "<p>Actualizando datos...</p>";
+                document.getElementById('tablaRanking').innerHTML = "<p>Esperando primeros registros...</p>";
             }
         }
 
-        setInterval(cargarRanking, 30000); // Refresca cada 30 segundos
+        setInterval(cargarRanking, 30000); 
         cargarRanking();
     </script>
 </body>
