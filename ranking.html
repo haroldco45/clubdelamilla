@@ -10,20 +10,23 @@
         body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 15px; text-align: center; color: var(--vibras-dark); }
         .ranking-card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; border-top: 8px solid var(--vibras-green); }
         h2 { margin-bottom: 5px; color: var(--vibras-green); letter-spacing: 1px; text-transform: uppercase; }
-        .challenge-box { background: #fff9c4; padding: 10px; border-radius: 12px; border: 2px dashed var(--superarroz); margin-bottom: 20px; }
-        .subtitle { font-size: 0.95em; color: var(--vibras-dark); font-weight: 600; }
+        .challenge-box { background: #fff9c4; padding: 15px; border-radius: 12px; border: 2px dashed var(--superarroz); margin-bottom: 20px; }
+        .subtitle { font-size: 0.95em; color: var(--vibras-dark); font-weight: 600; line-height: 1.4; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
-        th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.95em; }
+        th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.75em; text-transform: uppercase; }
+        td { padding: 15px 10px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.95em; }
         
-        .pos { font-weight: 600; color: var(--vibras-green); width: 45px; }
+        .pos { font-weight: 600; color: var(--vibras-green); width: 40px; }
         .top-1 { background: #fffdf2; }
         .crown { color: var(--gold); font-size: 1.2em; }
         
-        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600; display: inline-block; }
-        .virtual-tag { font-size: 0.6em; background: #9b59b6; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
+        /* Barra de Progreso */
+        .progress-container { width: 100%; background-color: #eee; border-radius: 10px; height: 8px; margin-top: 5px; }
+        .progress-bar { height: 100%; border-radius: 10px; background: linear-gradient(to right, #27ae60, #f1c40f); transition: width 1s ease-in-out; }
         
+        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 15px; font-size: 0.8em; font-weight: 600; }
+        .virtual-tag { font-size: 0.55em; background: #9b59b6; color: white; padding: 2px 5px; border-radius: 4px; vertical-align: middle; margin-left: 3px; }
         #loading { padding: 40px; color: #999; font-style: italic; }
     </style>
 </head>
@@ -32,7 +35,7 @@
         <h2>🏆 CLUB DE LA MILLA</h2>
         
         <div class="challenge-box">
-            <div class="subtitle">🌾 RETO: ¡Los primeros 60 KM ganan 1 paca de SUPERARROZ! 🌾</div>
+            <div class="subtitle">🌾 RETO SUPERARROZ 🌾<br>¡Los primeros 60 KM ganan 1 paca de arroz!</div>
         </div>
         
         <div id="tablaRanking">
@@ -41,57 +44,43 @@
     </div>
 
     <script>
-        // REEMPLAZA ESTA URL CON LA DE TU GOOGLE APPS SCRIPT
         const URL_GOOGLE = "https://script.google.com/macros/s/AKfycbyJG2u-g4YXTRKRRXrTb6EKse7_K2TdUeVpWeLMn7S94EGZl5iLThZ3V0FGaiFV0GtOrA/exec";
+        const META_KM = 60;
 
         async function cargarRanking() {
             try {
                 const response = await fetch(URL_GOOGLE);
                 const data = await response.json();
                 
-                // LÓGICA DE SUMATORIA ACUMULATIVA
                 const resumen = {};
                 data.forEach(item => {
                     const nombre = item.Nombre ? item.Nombre.trim() : "Anónimo";
                     const vueltas = parseInt(item.Vueltas) || 0;
-                    
-                    if (!resumen[nombre]) {
-                        resumen[nombre] = vueltas;
-                    } else {
-                        resumen[nombre] += vueltas;
-                    }
+                    if (!resumen[nombre]) { resumen[nombre] = vueltas; } 
+                    else { resumen[nombre] += vueltas; }
                 });
 
                 const listaOrdenada = Object.keys(resumen).map(nombre => {
                     return { nombre: nombre, vueltas: resumen[nombre] };
                 }).sort((a, b) => b.vueltas - a.vueltas);
 
-                if (listaOrdenada.length === 0) {
-                    document.getElementById('tablaRanking').innerHTML = "<p style='padding:20px; color:#666;'>¡El tablero está limpio! Sé el primero en sumar hoy.</p>";
-                    return;
-                }
-
-                let html = `<table>
-                    <tr>
-                        <th>Pos</th>
-                        <th style="text-align:left;">Corredor</th>
-                        <th>Vueltas</th>
-                        <th>Distancia</th>
-                    </tr>`;
+                let html = `<table><tr><th>Pos</th><th style="text-align:left;">Corredor</th><th>Progreso</th><th>Dist.</th></tr>`;
 
                 listaOrdenada.slice(0, 10).forEach((user, index) => {
-                    const km = (user.vueltas / 3).toFixed(1); 
+                    const km = (user.vueltas / 3).toFixed(1);
+                    const porcentaje = Math.min((km / META_KM) * 100, 100).toFixed(0);
                     const esVirtual = user.nombre.includes("(VIRTUAL)");
                     const nombreMostrar = user.nombre.replace("(VIRTUAL)", "").trim();
                     const esPrimero = index === 0;
 
                     html += `<tr class="${esPrimero ? 'top-1' : ''}">
                         <td class="pos">${esPrimero ? '<span class="crown">👑</span>' : (index + 1) + 'º'}</td>
-                        <td style="text-align:left;">
+                        <td style="text-align:left; font-size:0.9em;">
                             ${nombreMostrar} ${esVirtual ? '<span class="virtual-tag">VIRTUAL</span>' : ''}
+                            <div class="progress-container"><div class="progress-bar" style="width: ${porcentaje}%"></div></div>
                         </td>
-                        <td>${user.vueltas}</td>
-                        <td><span class="km-badge">${km} km</span></td>
+                        <td style="font-size:0.75em; color:#666;">${porcentaje}%</td>
+                        <td><span class="km-badge">${km}k</span></td>
                     </tr>`;
                 });
 
@@ -99,7 +88,7 @@
                 document.getElementById('tablaRanking').innerHTML = html;
 
             } catch (e) {
-                document.getElementById('tablaRanking').innerHTML = "<p>Esperando primeros registros...</p>";
+                document.getElementById('tablaRanking').innerHTML = "<p>Actualizando registros...</p>";
             }
         }
 
