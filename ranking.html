@@ -13,15 +13,15 @@
         .challenge-box { background: #fff9c4; padding: 15px; border-radius: 12px; border: 2px dashed var(--superarroz); margin-bottom: 20px; }
         .subtitle { font-size: 0.95em; color: var(--vibras-dark); font-weight: 600; line-height: 1.4; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
-        th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.75em; text-transform: uppercase; }
-        td { padding: 15px 10px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.95em; }
-        .pos { font-weight: 600; color: var(--vibras-green); width: 40px; }
+        th { background: #f8f9fa; color: #888; padding: 12px; font-size: 0.7em; text-transform: uppercase; }
+        td { padding: 15px 5px; border-bottom: 1px solid #f1f1f1; font-weight: 500; font-size: 0.9em; }
+        .pos { font-weight: 600; color: var(--vibras-green); width: 35px; }
         .top-1 { background: #fffdf2; }
-        .crown { color: var(--gold); font-size: 1.2em; }
         .progress-container { width: 100%; background-color: #eee; border-radius: 10px; height: 8px; margin-top: 5px; }
         .progress-bar { height: 100%; border-radius: 10px; background: linear-gradient(to right, #27ae60, #f1c40f); transition: width 1s ease-in-out; }
-        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 15px; font-size: 0.8em; font-weight: 600; }
-        .virtual-tag { font-size: 0.55em; background: #9b59b6; color: white; padding: 2px 5px; border-radius: 4px; vertical-align: middle; margin-left: 3px; }
+        .km-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; display: block; margin-top: 2px; }
+        .vueltas-text { font-size: 0.75em; color: #666; font-weight: 400; display: block; }
+        .virtual-tag { font-size: 0.5em; background: #9b59b6; color: white; padding: 1px 4px; border-radius: 3px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -30,7 +30,7 @@
         <div class="challenge-box">
             <div class="subtitle">🌾 RETO SUPERARROZ 🌾<br>¡Los primeros 60 KM ganan 1 paca de arroz!</div>
         </div>
-        <div id="tablaRanking">Cargando datos reales...</div>
+        <div id="tablaRanking">Sincronizando registros...</div>
     </div>
 
     <script>
@@ -41,17 +41,14 @@
             try {
                 const response = await fetch(URL_GOOGLE);
                 const data = await response.json();
-                
                 const sesiones = {}; 
 
                 data.forEach(item => {
                     const nombre = item.Nombre ? item.Nombre.trim() : "Anónimo";
                     const vueltas = parseInt(item.Vueltas) || 0;
-                    // Limpiamos la fecha para que sea un texto simple (ej: "2/2/2026")
                     const fechaRaw = item.Fecha ? item.Fecha.toString().split('T')[0] : "SinFecha";
                     const llave = nombre + "_" + fechaRaw;
 
-                    // Nos quedamos solo con la marca más alta por nombre y día
                     if (!sesiones[llave] || vueltas > sesiones[llave]) {
                         sesiones[llave] = vueltas;
                     }
@@ -60,17 +57,14 @@
                 const totales = {};
                 for (const llave in sesiones) {
                     const nombre = llave.split("_")[0];
-                    if (!totales[nombre]) {
-                        totales[nombre] = sesiones[llave];
-                    } else {
-                        totales[nombre] += sesiones[llave];
-                    }
+                    if (!totales[nombre]) { totales[nombre] = sesiones[llave]; } 
+                    else { totales[nombre] += sesiones[llave]; }
                 }
 
                 const lista = Object.keys(totales).map(n => ({ nombre: n, vueltas: totales[n] }))
                               .sort((a, b) => b.vueltas - a.vueltas);
 
-                let html = `<table><tr><th>Pos</th><th style="text-align:left;">Corredor</th><th>Progreso</th><th>Dist.</th></tr>`;
+                let html = `<table><tr><th>Pos</th><th style="text-align:left;">Participante</th><th>Progreso</th><th>Total</th></tr>`;
 
                 lista.slice(0, 10).forEach((user, index) => {
                     const km = (user.vueltas / 3).toFixed(1);
@@ -81,11 +75,14 @@
                     html += `<tr class="${index === 0 ? 'top-1' : ''}">
                         <td class="pos">${index === 0 ? '👑' : (index + 1) + 'º'}</td>
                         <td style="text-align:left;">
-                            ${nombreMostrar} ${esVirtual ? '<span class="virtual-tag">VIRTUAL</span>' : ''}
+                            <span style="font-weight:600;">${nombreMostrar}</span> ${esVirtual ? '<span class="virtual-tag">V</span>' : ''}
                             <div class="progress-container"><div class="progress-bar" style="width: ${porcentaje}%"></div></div>
                         </td>
-                        <td style="font-size:0.75em;">${porcentaje}%</td>
-                        <td><span class="km-badge">${km}k</span></td>
+                        <td style="font-size:0.8em; color:#666;">${porcentaje}%</td>
+                        <td>
+                            <span class="vueltas-text">${user.vueltas} Vueltas</span>
+                            <span class="km-badge">${km}k</span>
+                        </td>
                     </tr>`;
                 });
 
@@ -93,7 +90,7 @@
                 document.getElementById('tablaRanking').innerHTML = html;
 
             } catch (e) {
-                document.getElementById('tablaRanking').innerHTML = "Actualizando tablero...";
+                document.getElementById('tablaRanking').innerHTML = "Actualizando datos...";
             }
         }
 
